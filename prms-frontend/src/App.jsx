@@ -214,7 +214,7 @@ function AppRoutes() {
             </SuspenseWrapper>
           }
         />
-        <Route path="maintenance" element={<AdminSimplePage label="Maintenance Center" />} />
+        <Route path="maintenance" element={<AdminSimplePage type="maintenance" />} />
         <Route path="messages" element={<CommunicationHub />} />
         <Route path="reports" element={<AdminReports />} />
         <Route path="audit-logs" element={<AdminAuditLogs />} />
@@ -235,7 +235,7 @@ function AppRoutes() {
             </SuspenseWrapper>
           }
         />
-        <Route path="help" element={<AdminSimplePage label="Admin Help Center" />} />
+        <Route path="help" element={<AdminSimplePage type="help" />} />
       </Route>
 
       {/*  Landlord routes (AUTH-006: role-protected)  */}

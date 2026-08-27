@@ -3,11 +3,13 @@ import { motion } from 'framer-motion'
 import {
   CircleHelp,
   LogOut,
+  Search,
 } from 'lucide-react'
 import PageTransition from './PageTransition'
 import { useAuth } from '../contexts/AuthContext'
 import { buildNavItems, resolveActivePage } from './NavigationConfig'
 import NotificationDropdown from './NotificationDropdown'
+import ProfileDropdown from './ProfileDropdown'
 import ThemeSwitcher from './ThemeSwitcher'
 import './AdminLayout.css'
 
@@ -38,15 +40,6 @@ function AdminLayout() {
   const navItems = buildNavItems(role)
   const activePage = resolveActivePage(location.pathname, role)
 
-  const initials = user
-    ? (user.full_name || user.name || 'AS').split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)
-    : 'AS'
-
-  const API = import.meta.env.VITE_API_BASE_URL || window.location.origin || 'http://localhost:3500';
-  const profileImgUrl = user?.profile_img_url
-    ? (user.profile_img_url.startsWith('http') ? user.profile_img_url : (API + user.profile_img_url))
-    : null;
-
   function safeNavigate(path) {
     if (location.pathname !== path) navigate(path)
   }
@@ -56,7 +49,7 @@ function AdminLayout() {
   }
 
   return (
-    <main className="admin-layout-shell">
+    <main className="admin-layout-shell" data-customize-id="global.page">
       <aside className="admin-layout-sidebar" data-customize-id="global.sidebar">
         {navItems.map((item) => {
           const Icon = item.icon
@@ -101,38 +94,27 @@ function AdminLayout() {
         </motion.button>
       </aside>
 
-      <section className="admin-layout-main">
+      <section className="admin-layout-main" data-customize-id="global.content">
         <header className="admin-layout-topbar" data-customize-id="global.header">
-          <div className="admin-layout-brand" onClick={() => safeNavigate('/admin')}>
-            <h2>PRMS</h2>
+          <div className="admin-layout-brand" onClick={() => safeNavigate('/admin')} data-customize-id="global.brand">
+            <h2 data-customize-id="global.brand.title">PRMS</h2>
             <span></span>
-            <p>{getTopbarTitle(activePage)}</p>
+            <p data-customize-id="global.brand.subtitle">{getTopbarTitle(activePage)}</p>
           </div>
 
-          <div className="admin-layout-top-actions">
+          <div className="admin-layout-search" data-customize-id="global.search">
+            <Search size={22} />
+            <input type="text" placeholder="Search users, properties..." />
+          </div>
+
+          <div className="admin-layout-top-actions" data-customize-id="global.top-actions">
             <NotificationDropdown />
             <ThemeSwitcher />
-
-            <motion.div
-              className="admin-layout-avatar"
-              whileHover={{ scale: 1.08 }}
-              style={{ cursor: 'pointer' }}
-              onClick={() => safeNavigate('/admin/profile')}
-            >
-              {profileImgUrl ? (
-                <img
-                  src={profileImgUrl}
-                  alt={user?.full_name || 'Admin'}
-                  className="admin-layout-avatar-img"
-                />
-              ) : (
-                initials
-              )}
-            </motion.div>
+            <ProfileDropdown prefix="/admin" />
           </div>
         </header>
 
-        <div className="admin-layout-content">
+        <div className="admin-layout-content" data-customize-id="global.body">
           <PageTransition>
             <Outlet />
           </PageTransition>
