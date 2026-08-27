@@ -174,7 +174,10 @@ export class AuthController {
         user = await prisma.user.findUnique({ where: { email }, include: { UserRole: { include: { role: true } } } });
 
         if (user) {
-          if (user.firebase_uid && user.firebase_uid !== firebaseUid) {
+          // A "local-*" firebase_uid is a placeholder for password-based accounts
+          // (no real Firebase identity yet), so it's free to link to this Google account.
+          const hasRealFirebaseLink = user.firebase_uid && !user.firebase_uid.startsWith('local-');
+          if (hasRealFirebaseLink && user.firebase_uid !== firebaseUid) {
             throw new Error('Google account already linked');
           }
           user = await prisma.user.update({ where: { id: user.id }, data: { firebase_uid: firebaseUid }, include: { UserRole: { include: { role: true } } } });
