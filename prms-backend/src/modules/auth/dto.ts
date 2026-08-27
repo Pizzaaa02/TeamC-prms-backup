@@ -5,7 +5,9 @@ export const registerBody = [
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
   body('full_name').optional().isString(),
   body('phone').optional().isString(),
-  body('role').optional().isIn(['Admin', 'Landlord', 'Tenant']).withMessage('Valid role required'),
+  // 'Admin' is deliberately excluded from public self-registration — an Admin
+  // account must never be obtainable by an anonymous signup request.
+  body('role').optional().isIn(['Landlord', 'Tenant', 'Agent']).withMessage('Valid role required'),
 ];
 
 export const loginBody = [

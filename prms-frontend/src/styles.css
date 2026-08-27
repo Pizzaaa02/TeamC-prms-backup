@@ -83,6 +83,7 @@ input {
 
   /* Borders & outlines */
   --border-color: #e5e7eb;
+  --border-color-strong: #cbd5e1;
   --border-low: #e2e8f0;
   --outline: #76777d;
   --outline-variant: #c6c6cd;
@@ -138,10 +139,28 @@ input {
   --text-primary: #f9fafb;
   --text-secondary: #9ca3af;
   --border-color: #374151;
+  --border-color-strong: #4b5563;
   --shadow-color: rgba(0, 0, 0, 0.3);
   --card-bg: #1e1e1e;
   --sidebar-bg: #0a0a0a;
   --sidebar-text: #e5e7eb;
+
+  /* Surface/container family — was missing entirely, so light-theme values
+     (light blue/white) leaked through in dark mode (e.g. the "Tenant" role
+     badge and the dashboard's mini stat tiles stayed light-on-light). */
+  --surface-main: #1e1e1e;
+  --surface-subtle: #17171a;
+  --surface-container-low: #202024;
+  --surface-container: #26262b;
+  --surface-container-high: #2e2e34;
+  --surface-container-highest: #38383f;
+  --surface-container-lowest: #1e1e1e;
+  --surface-dim: #141417;
+  --on-surface: #f1f5f9;
+  --on-surface-variant: #cbd5e1;
+  --border-low: #2d333c;
+  --outline: #8b8d98;
+  --outline-variant: #3f3f46;
 }
 
 /* ================= LOGIN PAGE ================= */

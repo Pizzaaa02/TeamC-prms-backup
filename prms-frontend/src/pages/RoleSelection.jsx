@@ -3,7 +3,6 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowRight,
-  BriefcaseBusiness,
   Building2,
   Home,
   User,
@@ -41,14 +40,9 @@ function RoleSelection() {
       icon: Building2,
       path: '/agent',
     },
-    {
-      key: 'admin',
-      title: 'Admin',
-      description: 'Manage users, system security, and platform operations.',
-      icon: BriefcaseBusiness,
-      path: '/admin',
-    },
   ]
+  // Admin is deliberately not a self-service option here — Admin accounts
+  // must be provisioned by an existing Admin, never picked by a public signup.
 
   async function handleContinue() {
     /* Issue #4: Guard — don't proceed without role selection */

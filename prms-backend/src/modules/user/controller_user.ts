@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { validationResult } from 'express-validator';
 import { AuthRequest } from '../../middleware/auth';
 import * as userService from './service_user';
 import { recordAudit } from '../admin/service_audit';
@@ -18,6 +19,10 @@ const HELPERS = (req: Request) => {
 
 export class UserController {
   list = async (req: Request, res: Response) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, error: { message: errors.array()[0].msg } });
+    }
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
@@ -29,6 +34,10 @@ export class UserController {
   };
 
   getById = async (req: Request, res: Response) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, error: { message: errors.array()[0].msg } });
+    }
     try {
       const user = await userService.getUserById(String(req.params.id));
       if (!user) return res.status(404).json({ success: false, error: { message: 'User not found' } });
@@ -38,6 +47,10 @@ export class UserController {
   };
 
   create = async (req: Request, res: Response) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, error: { message: errors.array()[0].msg } });
+    }
     try {
       const { email, password, full_name, phone, role } = req.body;
       const user = await userService.createUser(email, password, full_name, phone, role);
@@ -47,6 +60,10 @@ export class UserController {
   };
 
   update = async (req: Request, res: Response) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, error: { message: errors.array()[0].msg } });
+    }
     try {
       const user = await userService.updateUser(String(req.params.id), req.body);
       HELPERS(req).log({ action: 'UPDATE_USER', entity: 'User', entityId: user.id, description: `Updated user ${user.email}` });
@@ -81,6 +98,10 @@ export class UserController {
   };
 
   changeRole = async (req: Request, res: Response) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, error: { message: errors.array()[0].msg } });
+    }
     try {
       const { role } = req.body;
       const userId = String(req.params.id);

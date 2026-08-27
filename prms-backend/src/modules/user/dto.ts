@@ -23,3 +23,7 @@ export const userQuery = [
 ];
 
 export const userIdParam = [param('id').isUUID()];
+
+export const changeRoleBody = [
+  body('role').isIn(['Admin', 'Landlord', 'Tenant', 'Agent']).withMessage('Valid role required'),
+];

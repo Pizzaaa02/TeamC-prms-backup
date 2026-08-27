@@ -9,7 +9,11 @@ export async function registerUser(email: string, password: string, full_name?: 
   if (existing) throw new Error('Email already registered');
 
   const passwordHash = await bcrypt.hash(password, 10);
-  const firebase_uid = "";
+  // firebase_uid is a unique column; password-based accounts have no real
+  // Firebase identity, so a per-user placeholder avoids collisions between
+  // otherwise-unrelated accounts (was hardcoded to "" which only allowed a
+  // single password-based registration to ever succeed).
+  const firebase_uid = `local-${uuidv4()}`;
 
   const user = await prisma.user.create({
     data: {
@@ -76,12 +80,20 @@ export async function getCurrentUser(userId: string) {
   });
 }
 
+// Roles a user may assign to themselves (e.g. during first-time onboarding).
+// 'Admin' is deliberately excluded — granting Admin must never be something
+// a user can trigger on their own account through a self-service endpoint.
+const SELF_SERVICE_ROLES = ['Tenant', 'Landlord', 'Agent'];
+
 export async function updateUserProfile(
   userId: string,
   data: { full_name?: string; phone?: string; profile_img_url?: string; role?: string }
 ) {
   // If role is provided, update the UserRole association
   if (data.role) {
+    if (!SELF_SERVICE_ROLES.includes(data.role)) {
+      throw new Error(`Role ${data.role} cannot be self-assigned`);
+    }
     const role = await prisma.role.findUnique({ where: { name: data.role } });
     if (!role) throw new Error(`Role ${data.role} not found`);
     await prisma.userRole.upsert({
@@ -95,7 +107,10 @@ export async function updateUserProfile(
   return prisma.user.update({
     where: { id: userId },
     data: userFields,
-    include: {
+    // passwordHash/refreshToken must never leave the API — select instead of include.
+    select: {
+      id: true, email: true, full_name: true, phone: true,
+      profile_img_url: true, firebase_uid: true, is_active: true, created_at: true,
       UserRole: { include: { role: true } },
     },
   });
