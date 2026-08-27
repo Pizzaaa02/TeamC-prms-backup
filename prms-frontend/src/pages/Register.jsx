@@ -42,6 +42,7 @@ function Register() {
 
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState('');
 
   function handleChange(field, value) {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -51,11 +52,11 @@ function Register() {
     if (e) e.preventDefault();
     setSubmitting(true);
     clearError();
+    setFormError('');
 
     if (formData.password !== formData.confirmPassword) {
       setSubmitting(false);
-      /* Simple inline mismatch handling */
-      alert('Passwords do not match');
+      setFormError('Passwords do not match');
       return;
     }
 
@@ -299,14 +300,14 @@ function Register() {
             </motion.div>
 
             {/* Error message */}
-            {error && (
+            {(formError || error) && (
               <motion.div
                 className="login-error"
                 role="alert"
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
               >
-                {error}
+                {formError || error}
               </motion.div>
             )}
 
