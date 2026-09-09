@@ -28,7 +28,7 @@ let verifyFirebaseToken: jest.Mock;
 let server: Server;
 let base: string;
 let temp: string;
-const signup = { email: 'auth-test@example.test', password: 'Test-pass-123!', full_name: 'Auth Test', role: 'Tenant' };
+const signup = { email: 'auth-test@example.test', password: 'Test-pass-123!', full_name: 'Auth Test', role: 'Tenant', privacyConsent: true };
 
 async function request(path: string, body?: unknown, token?: string, method = body === undefined ? 'GET' : 'POST') {
   const response = await fetch(`${base}${path}`, {
@@ -47,6 +47,8 @@ beforeAll(async () => {
   const Database = require('better-sqlite3');
   const sqlite = new Database(process.env.AUTH_TEST_DB);
   sqlite.exec(readFileSync(join(process.cwd(), 'prisma/migrations/20260612211110_init/migration.sql'), 'utf8'));
+  sqlite.exec('ALTER TABLE "users" ADD COLUMN "kycStatus" TEXT NOT NULL DEFAULT \'NOT_SUBMITTED\'; ALTER TABLE "users" ADD COLUMN "kycReviewedAt" DATETIME; ALTER TABLE "users" ADD COLUMN "kycReviewNotes" TEXT;');
+  sqlite.exec('CREATE TABLE "privacy_consents" ("id" TEXT NOT NULL PRIMARY KEY, "userId" TEXT NOT NULL, "purpose" TEXT NOT NULL, "granted" BOOLEAN NOT NULL, "noticeVersion" TEXT NOT NULL, "source" TEXT NOT NULL DEFAULT \'web\', "ipAddress" TEXT, "userAgent" TEXT, "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT "privacy_consents_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE); CREATE INDEX "privacy_consents_userId_purpose_idx" ON "privacy_consents"("userId", "purpose");');
   sqlite.close();
   prisma = require('../../../db').prisma;
   env = require('../../../config').env;

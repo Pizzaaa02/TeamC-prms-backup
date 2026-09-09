@@ -19,6 +19,7 @@ import RoleSelection from './pages/RoleSelection';
 import NotFound from './pages/NotFound';
 import Unauthorized from './pages/Unauthorized';
 import SearchPage from './pages/SearchPage';
+import PrivacyNotice from './pages/PrivacyNotice';
 
 /*  Lazy-loaded pages (code-split for performance)  */
 const PropertyDetail = lazy(() => import('./pages/PropertyDetail'));
@@ -55,6 +56,7 @@ import AgentSimplePage from './pages/AgentSimplePage';
 /*  Shared  */
 import Profile from './pages/Profile';
 import LandlordHeatmap from './pages/LandlordHeatmap';
+import LandlordMaintenance from './pages/LandlordMaintenance';
 import PaymentReceipt from './pages/PaymentReceipt';
 import CommunicationHub from './components/CommunicationHub';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -75,6 +77,11 @@ const AgentMaintenance = lazy(() => import('./pages/AgentMaintenance'));
 const AdminReports = lazy(() => import('./pages/AdminReports'));
 const AdminAuditLogs = lazy(() => import('./pages/AdminAuditLogs'));
 const NotificationCenter = lazy(() => import('./pages/NotificationCenter'));
+const PrivacyCenter = lazy(() => import('./pages/PrivacyCenter'));
+const AdminPrivacy = lazy(() => import('./pages/AdminPrivacy'));
+const Agreements = lazy(() => import('./pages/Agreements'));
+const AgentWork = lazy(() => import('./pages/AgentWork'));
+const AgentPortfolio = lazy(() => import('./pages/AgentPortfolio'));
 
 function AppRoutes() {
   const { loading } = useAuth();
@@ -103,6 +110,7 @@ function AppRoutes() {
 
       {/*  Issue #5: Public guest-properties route  */}
       <Route path="/properties" element={<GuestProperties />} />
+      <Route path="/privacy" element={<PrivacyNotice />} />
 
       {/*  Issue #12: PropertyDetail page (lazy-loaded)  */}
       <Route
@@ -212,7 +220,7 @@ function AppRoutes() {
             </SuspenseWrapper>
           }
         />
-        <Route path="maintenance" element={<AdminSimplePage type="maintenance" />} />
+        <Route path="maintenance" element={<LandlordMaintenance />} />
         <Route path="messages" element={<CommunicationHub />} />
         <Route path="reports" element={<AdminReports />} />
         <Route path="audit-logs" element={<AdminAuditLogs />} />
@@ -225,6 +233,7 @@ function AppRoutes() {
           }
         />
         <Route path="settings" element={<Settings />} />
+        <Route path="privacy" element={<AdminPrivacy />} />
         <Route
           path="settings/customizer"
           element={
@@ -280,9 +289,10 @@ function AppRoutes() {
           }
         />
         <Route path="heatmap" element={<LandlordHeatmap />} />
-        <Route path="maintenance" element={<LandlordSimplePage label="Maintenance Requests" />} />
+        <Route path="maintenance" element={<LandlordMaintenance />} />
         <Route path="messages" element={<CommunicationHub />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="privacy" element={<PrivacyCenter />} />
         <Route
           path="settings/customizer"
           element={
@@ -326,11 +336,13 @@ function AppRoutes() {
         />
         <Route path="properties/:id" element={<PropertyDetail />} />
         <Route path="bookings" element={<MyBookings />} />
+        <Route path="agreements" element={<Agreements />} />
         <Route path="payments" element={<TenantPayments />} />
         <Route path="payments/:id" element={<PaymentReceipt />} />
         <Route path="maintenance" element={<TenantMaintenance />} />
-        <Route path="messages" element={<TenantSimplePage label="Messages"><CommunicationHub /></TenantSimplePage>} />
+          <Route path="messages" element={<CommunicationHub />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="privacy" element={<PrivacyCenter />} />
         <Route
           path="settings/customizer"
           element={
@@ -339,7 +351,7 @@ function AppRoutes() {
             </SuspenseWrapper>
           }
         />
-        <Route path="help" element={<TenantSimplePage label="Help Center" />} />
+          <Route path="help" element={<TenantSimplePage type="help" />} />
       </Route>
 
       {/*  Agent routes (AUTH-006: role-protected)  */}
@@ -364,12 +376,13 @@ function AppRoutes() {
           }
         />
         <Route path="profile" element={<Profile />} />
-        <Route path="properties" element={<AgentSimplePage label="Assigned Properties" />} />
+        <Route path="properties" element={<AgentWork mode="properties" />} />
         <Route path="properties/:id" element={<PropertyDetail />} />
-        <Route path="bookings" element={<AgentSimplePage label="My Bookings" />} />
+        <Route path="bookings" element={<AgentWork mode="bookings" />} />
         <Route path="maintenance" element={<AgentMaintenance />} />
         <Route path="categories" element={<AgentCategories />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="privacy" element={<PrivacyCenter />} />
         <Route
           path="settings/customizer"
           element={
@@ -378,19 +391,19 @@ function AppRoutes() {
             </SuspenseWrapper>
           }
         />
-        <Route
-          path="finance"
+          <Route
+            path="finance"
+            element={
+              <SuspenseWrapper>
+                <AgentPortfolio mode="finance" />
+              </SuspenseWrapper>
+            }
+          />
+          <Route
+            path="reports"
           element={
             <SuspenseWrapper>
-              <FinanceDashboard />
-            </SuspenseWrapper>
-          }
-        />
-        <Route
-          path="reports"
-          element={
-            <SuspenseWrapper>
-              <AdminReports />
+                <AgentPortfolio mode="reports" />
             </SuspenseWrapper>
           }
         />

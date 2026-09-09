@@ -149,6 +149,8 @@
   background: rgba(22, 163, 74, 0.1);
 }
 
+.agent-status--pending { color: var(--status-warning); background: rgba(245, 158, 11, 0.12); }
+
 .agent-status--active {
   color: var(--status-success);
   background: rgba(22, 163, 74, 0.1);
@@ -306,4 +308,8 @@
     align-items: center;
     justify-content: flex-start;
   }
+  .agent-properties-grid,
+  .agent-bookings-list,
+  .agent-maintenance-list { padding: 14px; }
+  .agent-property-top { align-items: flex-start; gap: 10px; }
 }

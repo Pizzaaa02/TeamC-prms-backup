@@ -163,11 +163,12 @@ function Login() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.46, duration: 0.35 }}
             >
-              <label>Email Address</label>
+              <label htmlFor="login-email">Email Address</label>
 
               <div className="input-box">
                 <Mail size={22} />
                 <input
+                  id="login-email"
                   type="email"
                   placeholder="name@example.com"
                   value={email}
@@ -183,11 +184,12 @@ function Login() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.54, duration: 0.35 }}
             >
-              <label>Password</label>
+              <label htmlFor="login-password">Password</label>
 
               <div className="input-box">
                 <LockKeyhole size={22} />
                 <input
+                  id="login-password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   value={password}
@@ -195,14 +197,15 @@ function Login() {
                   required
                   autoComplete="current-password"
                 />
-                <span
+                <button
+                  type="button"
                   className="input-right-icon"
                   onClick={() => setShowPassword((v) => !v)}
-                  role="button"
-                  tabIndex={0}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
                 >
                   {showPassword ? <EyeOff size={22} /> : <Eye size={22} />}
-                </span>
+                </button>
               </div>
             </motion.div>
 
@@ -221,7 +224,13 @@ function Login() {
                 Remember me
               </label>
 
-              <a href="#">Forgot Password?</a>
+              <button
+                type="button"
+                className="text-btn"
+                onClick={() => setGoogleError('Password reset is not configured yet. Please contact your PRMS administrator.')}
+              >
+                Forgot password?
+              </button>
             </motion.div>
 
             {/* Error message */}

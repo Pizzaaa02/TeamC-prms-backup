@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useLocation, useNavigate, Outlet } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -17,6 +18,7 @@ function TenantLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, logout } = useAuth()
+  const [searchTerm, setSearchTerm] = useState('')
 
   const role = user?.role || 'Tenant'
   const navItems = buildNavItems(role)
@@ -28,6 +30,12 @@ function TenantLayout() {
 
   function handleLogout() {
     logout(navigate)
+  }
+
+  function handleSearch(event) {
+    event.preventDefault()
+    const query = searchTerm.trim()
+    navigate(query ? `/tenant/properties?search=${encodeURIComponent(query)}` : '/tenant/properties')
   }
 
   return (
@@ -43,6 +51,8 @@ function TenantLayout() {
               className={`tenant-layout-side-btn ${isActive ? 'active' : ''}`}
               onClick={() => safeNavigate(item.path)}
               title={item.label}
+              aria-label={item.label}
+              aria-current={isActive ? 'page' : undefined}
               whileTap={{ scale: 0.96 }}
             >
               <Icon size={25} />
@@ -56,8 +66,10 @@ function TenantLayout() {
         <motion.button
           type="button"
           className={`tenant-layout-side-btn ${activePage === 'help' ? 'active' : ''}`}
-          onClick={() => safeNavigate(`${location.pathname.split('/')[0]}/help`)}
+          onClick={() => safeNavigate('/tenant/help')}
           title="Help"
+          aria-label="Help"
+          aria-current={activePage === 'help' ? 'page' : undefined}
           whileTap={{ scale: 0.96 }}
         >
           <CircleHelp size={24} />
@@ -69,6 +81,7 @@ function TenantLayout() {
           className="tenant-layout-side-btn logout"
           onClick={handleLogout}
           title="Logout"
+          aria-label="Logout"
           whileTap={{ scale: 0.96 }}
         >
           <LogOut size={24} />
@@ -78,16 +91,16 @@ function TenantLayout() {
 
       <section className="tenant-layout-main" data-customize-id="global.content">
         <header className="tenant-layout-topbar" data-customize-id="global.header">
-          <div className="tenant-layout-brand" onClick={() => safeNavigate('/tenant')} data-customize-id="global.brand">
+          <button type="button" className="tenant-layout-brand" onClick={() => safeNavigate('/tenant')} data-customize-id="global.brand" aria-label="Go to tenant dashboard">
             <h2 data-customize-id="global.brand.title">PRMS</h2>
             <span></span>
             <p data-customize-id="global.brand.subtitle">{role} Portal</p>
-          </div>
+          </button>
 
-          <div className="tenant-layout-search" data-customize-id="global.search">
+          <form className="tenant-layout-search" data-customize-id="global.search" onSubmit={handleSearch} role="search">
             <Search size={22} />
-            <input type="text" placeholder="Search..." />
-          </div>
+            <input type="search" placeholder="Search properties..." aria-label="Search properties" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} />
+          </form>
 
           <div className="tenant-layout-actions" data-customize-id="global.top-actions">
             <NotificationDropdown />

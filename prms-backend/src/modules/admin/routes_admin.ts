@@ -7,12 +7,13 @@ import upload from '../../middleware/fileUpload';
 const router = express.Router();
 const ctrl = new AdminController();
 
+// Public branding and feature settings are required before authentication.
+router.get('/settings/public', ctrl.getPublicSettings);
 router.use(authenticate);
 
 // Settings - admin only
 router.get('/settings', adminOnly, ctrl.getSettings);
 router.get('/settings/category/:category', adminOnly, ctrl.getSettingsByCategory);
-router.get('/settings/public', ctrl.getPublicSettings);
 router.put('/settings', adminOnly, ctrl.updateSetting);
 router.put('/settings/bulk', adminOnly, ctrl.bulkUpdateSettings);
 router.post('/settings', adminOnly, ctrl.addSetting);

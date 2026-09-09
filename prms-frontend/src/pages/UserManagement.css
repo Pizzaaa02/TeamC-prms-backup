@@ -40,6 +40,13 @@
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
+  box-shadow: 0 10px 24px rgba(129, 43, 202, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.user-mgmt-add-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px rgba(129, 43, 202, 0.28);
 }
 
 /* ── Cards ── */
@@ -59,6 +66,13 @@
   flex-direction: column;
   gap: 6px;
   min-height: 100px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.user-mgmt-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--outline-variant);
 }
 
 .user-mgmt-card-icon {
@@ -114,6 +128,30 @@
   border: none;
   outline: none;
   font-size: 14px;
+  color: var(--on-surface);
+}
+
+.user-mgmt-search:focus-within,
+.user-mgmt-filter-group:focus-within {
+  border-color: var(--secondary-accent);
+  box-shadow: 0 0 0 3px rgba(129, 43, 202, 0.1);
+}
+
+.user-mgmt-clear {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: var(--radius-sm);
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.user-mgmt-clear:hover {
+  background: var(--surface-container);
   color: var(--on-surface);
 }
 
@@ -185,6 +223,10 @@
 
 .user-mgmt-tr:last-child {
   border-bottom: none;
+}
+
+.user-mgmt-tr:hover {
+  background: var(--surface-container-low);
 }
 
 /* User cell */
@@ -283,6 +325,11 @@
 .action-group button:hover {
   background: var(--surface-container);
   border-color: var(--border-color-hover);
+}
+
+.action-group button:focus-visible,
+.role-select:focus-visible {
+  border-color: var(--secondary-accent);
 }
 
 .action-group button.danger:hover {
@@ -693,10 +740,47 @@
 
   .user-mgmt-table-wrap {
     overflow-x: auto;
+    background:
+      linear-gradient(to right, var(--surface-container-lowest) 30%, transparent),
+      linear-gradient(to left, var(--surface-container-lowest) 30%, transparent) 100% 0,
+      radial-gradient(farthest-side at 0 50%, rgba(15, 23, 42, 0.14), transparent),
+      radial-gradient(farthest-side at 100% 50%, rgba(15, 23, 42, 0.14), transparent) 100% 0;
+    background-repeat: no-repeat;
+    background-size: 36px 100%, 36px 100%, 12px 100%, 12px 100%;
+    background-attachment: local, local, scroll, scroll;
   }
 
   .user-mgmt-pagination {
     flex-direction: column;
     gap: var(--spacing-sm);
+  }
+}
+
+@media (max-width: 560px) {
+  .user-mgmt-hero h1 {
+    font-size: 24px;
+  }
+
+  .user-mgmt-add-btn,
+  .user-mgmt-filters,
+  .user-mgmt-filter-group {
+    width: 100%;
+  }
+
+  .user-mgmt-filter-group {
+    flex: 1;
+  }
+
+  .user-mgmt-filter-group select {
+    width: 100%;
+  }
+
+  .user-mgmt-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .user-mgmt-card {
+    min-height: 128px;
+    padding: 16px;
   }
 }

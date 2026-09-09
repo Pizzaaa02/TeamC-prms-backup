@@ -1,6 +1,6 @@
-import AgentSidebar from '../components/AgentSidebar';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { BookOpen, CircleHelp, Mail, ShieldCheck } from 'lucide-react';
 import PropTypes from 'prop-types';
 
 const AgentSimplePage = ({ label }) => {
@@ -17,33 +17,24 @@ const AgentSimplePage = ({ label }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   return (
-    <div className="page-container">
-      <AgentSidebar />
-      <main className="content-wrapper" data-customize-id="global.content">
-        <div className="topbar">
-          <h2>{label}</h2>
-          <div className="topbar-right">
-            <div className="search-bar">
-              <input
-                type="text"
-                placeholder="Search..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div className="user-avatar">AG</div>
-          </div>
+    <div className="compliance-page" data-customize-id="global.content">
+      <header className="compliance-heading"><CircleHelp /><div><h1>{label}</h1><p>Guidance for managing assigned properties, bookings and maintenance safely.</p></div></header>
+      <section className="compliance-card">
+        <label htmlFor="agent-help-search"><strong>Search help topics</strong></label>
+        <input id="agent-help-search" className="form-input" type="search" placeholder="Search help topics..." value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} />
+        <div className="quick-links-grid">
+          {[
+            { title: 'Assigned properties', text: 'Review the properties placed under your management.', icon: BookOpen, path: '/agent/properties' },
+            { title: 'Privacy Center', text: 'Review access, consent and personal-data controls.', icon: ShieldCheck, path: '/agent/privacy' },
+            { title: 'Maintenance queue', text: 'Track and update repair work assigned to you.', icon: Mail, path: '/agent/maintenance' },
+          ].filter((topic) => `${topic.title} ${topic.text}`.toLowerCase().includes(searchTerm.toLowerCase())).map((topic) => {
+            const Icon = topic.icon
+            return <button key={topic.path} type="button" className="quick-link-btn" onClick={() => navigate(topic.path)}><Icon size={20} /><strong>{topic.title}</strong><span>{topic.text}</span></button>
+          })}
         </div>
+      </section>
 
-        <div className="page-content">
-          <div className="info-box">
-            <p>Loading {label}...</p>
-            <p className="muted">
-              Connect this page to the backend API to display live data.
-            </p>
-          </div>
-
-          <div className="quick-links">
+          <section className="compliance-card">
             <h3>Quick Navigation</h3>
             <div className="quick-links-grid">
               {agentPages.map((page) => (
@@ -56,9 +47,7 @@ const AgentSimplePage = ({ label }) => {
                 </button>
               ))}
             </div>
-          </div>
-        </div>
-      </main>
+          </section>
     </div>
   );
 };

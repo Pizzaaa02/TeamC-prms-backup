@@ -44,5 +44,6 @@ router.delete('/:id', adminOnly, userIdParam, ctrl.remove);
 router.post('/:id/activate', adminOnly, userIdParam, ctrl.activate);
 router.post('/:id/suspend', adminOnly, userIdParam, ctrl.suspend);
 router.post('/:id/change-role', adminOnly, userIdParam, changeRoleBody, ctrl.changeRole);
+router.patch('/:id/kyc', adminOnly, userIdParam, ctrl.reviewKyc);
 
 export default router;

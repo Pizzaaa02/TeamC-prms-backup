@@ -24,6 +24,8 @@ import agentRoutes from './modules/agent/routes_agent';
 import categoryRoutes from './modules/category/routes_category';
 import themeRoutes from './modules/theme/routes_theme';
 import favoriteRoutes from './modules/favorite/routes_favorite';
+import privacyRoutes from './modules/privacy/routes_privacy';
+import agreementRoutes from './modules/agreement/routes_agreement';
 
 // Firebase is initialized lazily by the shared, credential-aware auth helper.
 
@@ -34,9 +36,17 @@ const PORT = env.PORT;
 app.use(helmet());
 // Parse CORS_ORIGIN: supports single string or comma-separated list → array
 const corsOrigins = env.CORS_ORIGIN.split(',').map((o: string) => o.trim());
-const corsOriginValue = corsOrigins.length === 1 ? corsOrigins[0] : corsOrigins;
-
-app.use(cors({ origin: corsOriginValue }));
+if (env.NODE_ENV === 'development') {
+  for (const localOrigin of ['http://localhost:5173', 'http://127.0.0.1:5173']) {
+    if (!corsOrigins.includes(localOrigin)) corsOrigins.push(localOrigin);
+  }
+}
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || corsOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('Origin is not permitted by CORS'));
+  },
+}));
 app.use(express.json());
 app.use(responseCache);
 app.use(requestLogger);
@@ -102,6 +112,8 @@ router.use('/agents', agentRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/themes', themeRoutes);
 router.use('/favorites', favoriteRoutes);
+router.use('/privacy', privacyRoutes);
+router.use('/agreements', agreementRoutes);
 import notificationRoutes from './modules/notification/routes_notification';
 router.use('/notifications', notificationRoutes);
 

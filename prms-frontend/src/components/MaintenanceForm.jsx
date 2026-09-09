@@ -1,20 +1,13 @@
 import {
   useState,
   useEffect,
-  useCallback,
 } from 'react';
 
 import Modal from '../components/Modal';
 import { maintenanceApi } from '../api/maintenance';
+import { propertyApi } from '../api/property';
 
 const PRIORITY_ORDER = ['critical', 'high', 'medium', 'low'];
-
-const PRIORITY_MAP = {
-  critical: { label: 'Critical', color: '#ef4444' },
-  high: { label: 'High', color: '#f97316' },
-  medium: { label: 'Medium', color: '#eab308' },
-  low: { label: 'Low', color: '#22c55e' },
-};
 
 export default function MaintenanceForm({ onSuccess, initialData }) {
   const [open, setOpen] = useState(true);
@@ -33,15 +26,10 @@ export default function MaintenanceForm({ onSuccess, initialData }) {
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    loadProperties();
+    propertyApi.list({ limit: 100 })
+      .then((res) => setProperties(res.data?.data || []))
+      .catch(() => setProperties([]));
   }, []);
-
-  const loadProperties = async () => {
-    try {
-      const res = await maintenanceApi.list({ limit: 100 });
-      setProperties(res.data?.data || []);
-    } catch {}
-  };
 
   const set = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
 
@@ -57,13 +45,8 @@ export default function MaintenanceForm({ onSuccess, initialData }) {
   const submit = async () => {
     setUploading(true);
     try {
-      const data = { title: form.title, description: form.description, priority: form.priority, propertyId: form.propertyId, contactMethod: form.contactMethod };
+      const data = { title: form.title, description: form.description, priority: form.priority.toUpperCase(), propertyId: form.propertyId };
       const res = await maintenanceApi.createTicket(data);
-      if (form.files.length > 0) {
-        const fd = new FormData();
-        form.files.forEach(f => fd.append('photos', f));
-        await maintenanceApi.addPhoto(res.data.data._id || res.data.data.id, fd);
-      }
       onSuccess?.(res.data.data);
       setOpen(false);
     } catch (e) { alert(e.response?.data?.message || 'Failed to create ticket'); }
@@ -74,7 +57,6 @@ export default function MaintenanceForm({ onSuccess, initialData }) {
     set('files', Array.from(e.target.files));
   };
 
-  const statusOpts = ['submitted', 'assigned', 'in_progress', 'resolved', 'closed'];
   const steps = [
     { label: 'Details', icon: '📝' },
     { label: 'Photos', icon: '📷' },

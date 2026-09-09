@@ -5,13 +5,13 @@ import { successResponse, paginatedResponse } from '../../utils/response';
 import { clearCache } from '../../middleware/responseCache';
 
 export class CategoryController {
-  list = async (req: Request, res: Response) => {
+  list = async (req: AuthRequest, res: Response) => {
     try {
       const { isShared, isDisabled, ownerId } = req.query;
       const categories = await categoryService.listCategories({
-        isShared: isShared ? isShared === 'true' : undefined,
+        isShared: req.user?.role === 'Agent' ? false : (isShared ? isShared === 'true' : undefined),
         isDisabled: isDisabled ? isDisabled === 'true' : undefined,
-        ownerId: ownerId as string,
+        ownerId: req.user?.role === 'Agent' ? req.user.id : ownerId as string,
       });
       res.json(successResponse(categories));
     } catch (error: any) {
@@ -45,7 +45,7 @@ export class CategoryController {
       const { name, description, isShared } = req.body;
       if (!req.user) return res.status(401).json({ success: false, error: { message: 'Unauthorized' } });
       const category = await categoryService.createCategory(
-        { name, description, isShared },
+        { name, description, isShared: req.user.role === 'Admin' ? isShared : false },
         req.user.id,
       );
       clearCache('^/categories');

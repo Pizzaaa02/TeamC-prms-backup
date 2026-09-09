@@ -33,6 +33,28 @@ export async function updateBooking(id: string, data: { status?: 'PENDING' | 'CO
   return prisma.booking.update({ where: { id }, data, include: { user: true, property: true } });
 }
 
+export async function confirmBooking(id: string) {
+  const booking = await prisma.booking.findUnique({ where: { id }, include: { property: true, user: true } });
+  if (!booking) throw new Error('Booking not found');
+  if (booking.status !== 'PENDING') throw new Error('Only pending bookings can be confirmed');
+  const amount = booking.totalAmount || booking.property.rent;
+  const terms = `Rental agreement for ${booking.property.title}. Term: ${booking.start_date.toISOString().slice(0, 10)} to ${booking.end_date.toISOString().slice(0, 10)}. Rent: RM ${amount.toFixed(2)}. The tenant shall use the property lawfully, pay amounts when due, and report maintenance issues promptly. The landlord shall provide the premises in a habitable condition and process personal data only for the rental purpose described in the PRMS privacy notice.`;
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.booking.update({ where: { id }, data: { status: 'CONFIRMED', paymentStatus: 'PENDING', totalAmount: amount }, include: { user: true, property: true } });
+    await tx.rentalAgreement.upsert({
+      where: { bookingId: id },
+      create: { bookingId: id, propertyId: booking.propertyId, tenantId: booking.userId, status: 'DRAFT', terms },
+      update: { terms },
+    });
+    const due = new Date(booking.start_date);
+    await tx.payment.create({ data: { bookingId: id, userId: booking.userId, amount, type: 'rent', method: 'simulation', status: 'PENDING', due_date: due } });
+    await tx.invoice.create({ data: { bookingId: id, propertyId: booking.propertyId, userId: booking.userId, amount, status: 'PENDING', due_date: due } });
+    await tx.notification.create({ data: { userId: booking.userId, type: 'BOOKING_CONFIRMED', title: 'Booking confirmed', message: `${booking.property.title} has been approved. Your agreement and payment are ready.` } });
+    await tx.notification.create({ data: { userId: booking.property.ownerId, type: 'BOOKING_CONFIRMED', title: 'Booking approved', message: `The booking for ${booking.property.title} has been confirmed.` } });
+    return updated;
+  });
+}
+
 export async function cancelBooking(id: string) {
   return prisma.booking.update({ where: { id }, data: { status: 'CANCELLED' } });
 }

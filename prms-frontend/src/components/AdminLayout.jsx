@@ -120,6 +120,8 @@ function AdminLayout() {
               className={`admin-layout-side-btn ${isActive ? 'active' : ''}`}
               onClick={() => safeNavigate(item.path)}
               title={item.label}
+              aria-label={item.label}
+              aria-current={isActive ? 'page' : undefined}
               whileTap={{ scale: 0.96 }}
             >
               <Icon size={25} />
@@ -135,6 +137,8 @@ function AdminLayout() {
           className={`admin-layout-side-btn ${activePage === 'help' ? 'active' : ''}`}
           onClick={() => safeNavigate('/admin/help')}
           title="Help"
+          aria-label="Help"
+          aria-current={activePage === 'help' ? 'page' : undefined}
           whileTap={{ scale: 0.96 }}
         >
           <CircleHelp size={24} />
@@ -146,6 +150,7 @@ function AdminLayout() {
           className="admin-layout-side-btn logout"
           onClick={handleLogout}
           title="Logout"
+          aria-label="Log out"
           whileTap={{ scale: 0.96 }}
         >
           <LogOut size={24} />
@@ -155,16 +160,17 @@ function AdminLayout() {
 
       <section className="admin-layout-main" data-customize-id="global.content">
         <header className="admin-layout-topbar" data-customize-id="global.header">
-          <div className="admin-layout-brand" onClick={() => safeNavigate('/admin')} data-customize-id="global.brand">
+          <button type="button" className="admin-layout-brand" onClick={() => safeNavigate('/admin')} data-customize-id="global.brand" aria-label="Go to Admin dashboard">
             <h2 data-customize-id="global.brand.title">PRMS</h2>
             <span></span>
             <p data-customize-id="global.brand.subtitle">{getTopbarTitle(activePage)}</p>
-          </div>
+          </button>
 
           <div className="admin-layout-search" data-customize-id="global.search" ref={searchBoxRef}>
             <Search size={22} />
             <input
               type="text"
+              aria-label="Search users and properties"
               placeholder="Search users, properties..."
               value={globalSearch}
               onChange={(e) => setGlobalSearch(e.target.value)}

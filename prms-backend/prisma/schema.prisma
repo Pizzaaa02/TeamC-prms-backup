@@ -45,37 +45,61 @@ enum MaintenancePriority {
   URGENT
 }
 
+enum DataRequestType {
+  ACCESS
+  CORRECTION
+  WITHDRAW_CONSENT
+  ERASURE
+  RESTRICT_PROCESSING
+  OBJECT_DIRECT_MARKETING
+}
+
+enum DataRequestStatus {
+  SUBMITTED
+  IN_REVIEW
+  COMPLETED
+  REJECTED
+}
+
+enum AgreementStatus {
+  DRAFT
+  ACTIVE
+  EXPIRED
+  TERMINATED
+}
+
 model Agent {
-  id            String   @id @default(uuid())
-  userId        String   @unique
-  user          User     @relation(fields: [userId], references: [id])
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
+  id              String          @id @default(uuid())
+  userId          String          @unique
+  user            User            @relation(fields: [userId], references: [id])
+  created_at      DateTime        @default(now())
+  updated_at      DateTime        @updatedAt
   agentProperties AgentProperty[]
+
   @@map("agents")
 }
 
 model AgentProperty {
   agentId    String
   propertyId String
-  agent      Agent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  agent      Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  
+
   @@id([agentId, propertyId])
   @@map("agent_properties")
 }
 
 model PropertyCategory {
-  id             String     @id @default(uuid())
-  name           String     @unique
-  description    String?
-  isShared       Boolean    @default(true)
-  ownerId        String?
-  owner          User?      @relation("user_categories", fields: [ownerId], references: [id])
-  isDisabled     Boolean    @default(false)
-  created_at     DateTime   @default(now())
-  updated_at     DateTime   @updatedAt
-  properties     Property[]
+  id          String     @id @default(uuid())
+  name        String     @unique
+  description String?
+  isShared    Boolean    @default(true)
+  ownerId     String?
+  owner       User?      @relation("user_categories", fields: [ownerId], references: [id])
+  isDisabled  Boolean    @default(false)
+  created_at  DateTime   @default(now())
+  updated_at  DateTime   @updatedAt
+  properties  Property[]
 
   @@index([isShared])
   @@index([ownerId])
@@ -83,119 +107,133 @@ model PropertyCategory {
 }
 
 model User {
-  id              String   @id @default(uuid())
-  firebase_uid    String   @unique
-  email           String?  @unique
+  id              String    @id @default(uuid())
+  firebase_uid    String    @unique
+  email           String?   @unique
   passwordHash    String?
   full_name       String?
   phone           String?
   profile_img_url String?
   refreshToken    String?
-  is_active       Boolean  @default(true)
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
-  
-  UserRole    UserRole[]
-  properties  Property[]
-  tickets     MaintenanceTicket[]
-  bookings       Booking[]
-  sentMessages   Message[]    @relation("sender")
-  receivedMessages Message[] @relation("receiver")
-  payments       Payment[]
-  invoices    Invoice[]
-  notifications Notification[]
-  favorites   Favorite[]
-  auditLogs   AuditLog[]
-  agents               Agent[]
-  personalCategories   PropertyCategory[] @relation("user_categories")
-  preferences          UserPreference?
-  uploadedFiles        UserProfileFile[]
+  is_active       Boolean   @default(true)
+  kycStatus       String    @default("NOT_SUBMITTED")
+  kycReviewedAt   DateTime?
+  kycReviewNotes  String?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  UserRole           UserRole[]
+  properties         Property[]
+  tickets            MaintenanceTicket[]
+  bookings           Booking[]
+  sentMessages       Message[]            @relation("sender")
+  receivedMessages   Message[]            @relation("receiver")
+  payments           Payment[]
+  invoices           Invoice[]
+  notifications      Notification[]
+  favorites          Favorite[]
+  auditLogs          AuditLog[]
+  agents             Agent[]
+  personalCategories PropertyCategory[]   @relation("user_categories")
+  preferences        UserPreference?
+  uploadedFiles      UserProfileFile[]
+  privacyConsents    PrivacyConsent[]
+  dataRequests       DataSubjectRequest[]
+  rentalAgreements   RentalAgreement[]    @relation("tenant_agreements")
 
   @@index([email])
   @@map("users")
 }
 
 model Role {
-  id    String @id @default(uuid())
-  name  String @unique
+  id    String     @id @default(uuid())
+  name  String     @unique
   users UserRole[]
+
   @@map("roles")
 }
 
 model UserRole {
   userId String
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   roleId String
-  role   Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@id([userId, roleId])
   @@map("user_roles")
 }
 
 model Property {
-  id             String    @id @default(uuid())
-  title          String
-  address        String
-  property_type  String    @default("apartment")
-  description    String?
-  categoryId     String?
-  category       PropertyCategory? @relation(fields: [categoryId], references: [id])
-  rent           Float
-  status         PropertyStatus  @default(AVAILABLE)
-  availableFrom  DateTime?
-  availableTo    DateTime?
-  city           String?
-  state          String?
-  ownerId        String
-  owner          User      @relation(fields: [ownerId], references: [id])
-  amenities      Amenity[]
-  agentProperties AgentProperty[]
+  id                 String              @id @default(uuid())
+  title              String
+  address            String
+  property_type      String              @default("apartment")
+  description        String?
+  categoryId         String?
+  category           PropertyCategory?   @relation(fields: [categoryId], references: [id])
+  rent               Float
+  status             PropertyStatus      @default(AVAILABLE)
+  availableFrom      DateTime?
+  availableTo        DateTime?
+  city               String?
+  state              String?
+  latitude           Float?
+  longitude          Float?
+  ownerId            String
+  owner              User                @relation(fields: [ownerId], references: [id])
+  amenities          Amenity[]
+  agentProperties    AgentProperty[]
   images             PropertyImage[]
   videoUrls          Json?
   documentUrls       Json?
   bookings           Booking[]
-  invoices       Invoice[]
-  favorites      Favorite[]
+  invoices           Invoice[]
+  favorites          Favorite[]
+  maintenanceTickets MaintenanceTicket[]
+  rentalAgreements   RentalAgreement[]
 
   @@index([ownerId])
   @@map("properties")
 }
 
 model Amenity {
-  id             String   @id @default(uuid())
-  name           String
-  description    String?
-  propertyId     String
-  property       Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  propertyId  String
+  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
   @@map("amenities")
 }
 
 model PropertyImage {
-  id              String   @id @default(uuid())
-  url             String
-  thumbnailUrl    String?
-  type            String   @default("image")
-  documentName    String?
-  propertyId      String
-  property        Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  id           String   @id @default(uuid())
+  url          String
+  thumbnailUrl String?
+  type         String   @default("image")
+  documentName String?
+  propertyId   String
+  property     Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
   @@map("property_images")
 }
 
 model Booking {
-  id             String   @id @default(uuid())
-  userId         String
-  user           User     @relation(fields: [userId], references: [id])
-  propertyId     String
-  property       Property @relation(fields: [propertyId], references: [id])
-  start_date     DateTime
-  end_date       DateTime
-  status         BookingStatus   @default(PENDING)
-  totalAmount    Float?
-  paymentStatus  PaymentStatus   @default(UNPAID)
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
-  payments       Payment[]
-  invoices       Invoice[]
+  id              String           @id @default(uuid())
+  userId          String
+  user            User             @relation(fields: [userId], references: [id])
+  propertyId      String
+  property        Property         @relation(fields: [propertyId], references: [id])
+  start_date      DateTime
+  end_date        DateTime
+  status          BookingStatus    @default(PENDING)
+  totalAmount     Float?
+  paymentStatus   PaymentStatus    @default(UNPAID)
+  created_at      DateTime         @default(now())
+  updated_at      DateTime         @updatedAt
+  payments        Payment[]
+  invoices        Invoice[]
+  rentalAgreement RentalAgreement?
 
   @@index([userId])
   @@index([propertyId])
@@ -203,61 +241,129 @@ model Booking {
 }
 
 model Payment {
-  id             String   @id @default(uuid())
-  bookingId      String
-  booking        Booking  @relation(fields: [bookingId], references: [id])
-  userId         String
-  user           User     @relation(fields: [userId], references: [id])
-  amount         Float
-  type           String   @default("rent")
-  method         String   @default("cash")
-  status         PaymentStatus @default(PENDING)
-  due_date       DateTime
-  paid_at        DateTime?
-  reference      String?
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
+  id         String        @id @default(uuid())
+  bookingId  String
+  booking    Booking       @relation(fields: [bookingId], references: [id])
+  userId     String
+  user       User          @relation(fields: [userId], references: [id])
+  amount     Float
+  type       String        @default("rent")
+  method     String        @default("cash")
+  status     PaymentStatus @default(PENDING)
+  due_date   DateTime
+  paid_at    DateTime?
+  reference  String?
+  created_at DateTime      @default(now())
+  updated_at DateTime      @updatedAt
 
   @@index([userId])
   @@map("payments")
 }
 
 model Invoice {
-  id             String   @id @default(uuid())
-  bookingId      String
-  booking        Booking  @relation(fields: [bookingId], references: [id])
-  propertyId     String
-  property       Property @relation(fields: [propertyId], references: [id])
-  userId         String
-  user           User     @relation(fields: [userId], references: [id])
-  amount         Float
-  status         PaymentStatus @default(PENDING)
-  due_date       DateTime
-  issue_date     DateTime @default(now())
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
+  id         String        @id @default(uuid())
+  bookingId  String
+  booking    Booking       @relation(fields: [bookingId], references: [id])
+  propertyId String
+  property   Property      @relation(fields: [propertyId], references: [id])
+  userId     String
+  user       User          @relation(fields: [userId], references: [id])
+  amount     Float
+  status     PaymentStatus @default(PENDING)
+  due_date   DateTime
+  issue_date DateTime      @default(now())
+  created_at DateTime      @default(now())
+  updated_at DateTime      @updatedAt
 
   @@index([userId])
   @@map("invoices")
 }
 
 model MaintenanceTicket {
-  id             String   @id @default(uuid())
-  userId         String
-  user           User     @relation(fields: [userId], references: [id])
-  propertyId     String?
-  title          String
-  description    String
-  status         MaintenanceStatus @default(OPEN)
-  priority       MaintenancePriority @default(MEDIUM)
-  assignedTo     String?
-  resolved_at    DateTime?
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
+  id          String              @id @default(uuid())
+  userId      String
+  user        User                @relation(fields: [userId], references: [id])
+  propertyId  String?
+  property    Property?           @relation(fields: [propertyId], references: [id])
+  title       String
+  description String
+  status      MaintenanceStatus   @default(OPEN)
+  priority    MaintenancePriority @default(MEDIUM)
+  assignedTo  String?
+  resolved_at DateTime?
+  created_at  DateTime            @default(now())
+  updated_at  DateTime            @updatedAt
 
   @@index([userId])
   @@index([propertyId])
   @@map("maintenance_tickets")
+}
+
+model RentalAgreement {
+  id                String          @id @default(uuid())
+  bookingId         String          @unique
+  booking           Booking         @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  propertyId        String
+  property          Property        @relation(fields: [propertyId], references: [id])
+  tenantId          String
+  tenant            User            @relation("tenant_agreements", fields: [tenantId], references: [id])
+  status            AgreementStatus @default(DRAFT)
+  terms             String
+  generated_at      DateTime        @default(now())
+  accepted_at       DateTime?
+  tenantSignature   String?
+  landlordSignature String?
+
+  @@map("rental_agreements")
+}
+
+model PrivacyConsent {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purpose       String
+  granted       Boolean
+  noticeVersion String
+  source        String   @default("web")
+  ipAddress     String?
+  userAgent     String?
+  created_at    DateTime @default(now())
+
+  @@index([userId, purpose])
+  @@map("privacy_consents")
+}
+
+model DataSubjectRequest {
+  id           String            @id @default(uuid())
+  userId       String
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type         DataRequestType
+  status       DataRequestStatus @default(SUBMITTED)
+  details      String?
+  response     String?
+  completed_at DateTime?
+  created_at   DateTime          @default(now())
+  updated_at   DateTime          @updatedAt
+
+  @@index([userId, status])
+  @@map("data_subject_requests")
+}
+
+model DataBreachIncident {
+  id                     String    @id @default(uuid())
+  title                  String
+  description            String
+  detected_at            DateTime
+  affectedCount          Int       @default(0)
+  riskLevel              String
+  containment            String?
+  commissionerNotifiedAt DateTime?
+  subjectsNotifiedAt     DateTime?
+  status                 String    @default("OPEN")
+  created_at             DateTime  @default(now())
+  updated_at             DateTime  @updatedAt
+
+  @@map("data_breach_incidents")
 }
 
 model Message {
@@ -276,14 +382,14 @@ model Message {
 }
 
 model Notification {
-  id             String   @id @default(uuid())
-  userId         String
-  user           User     @relation(fields: [userId], references: [id])
-  type           String
-  title          String
-  message        String
-  isRead         Boolean  @default(false)
-  created_at     DateTime @default(now())
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  type       String
+  title      String
+  message    String
+  isRead     Boolean  @default(false)
+  created_at DateTime @default(now())
 
   @@index([userId])
   @@map("notifications")
@@ -297,39 +403,42 @@ model SystemSetting {
   description String?
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
+
   @@map("system_settings")
 }
 
 model UserPreference {
-  id          String   @id @default(uuid())
-  userId      String   @unique
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  appearance  String   @default("system")
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appearance String   @default("system")
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
   @@map("user_preferences")
 }
 
 model Theme {
-  id          String       @id @default(uuid())
-  name        String       @default("Default Theme")
-  isPublished Boolean      @default(true)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id          String         @id @default(uuid())
+  name        String         @default("Default Theme")
+  isPublished Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
   versions    ThemeVersion[]
   drafts      ThemeDraft[]
+
   @@map("themes")
 }
 
 model ThemeVersion {
-  id              String   @id @default(uuid())
-  themeId         String
-  theme           Theme    @relation(fields: [themeId], references: [id], onDelete: Cascade)
-  version         Int
-  lightConfig     Json?
-  darkConfig      Json?
-  createdAt       DateTime @default(now())
-  createdBy       String?
+  id          String   @id @default(uuid())
+  themeId     String
+  theme       Theme    @relation(fields: [themeId], references: [id], onDelete: Cascade)
+  version     Int
+  lightConfig Json?
+  darkConfig  Json?
+  createdAt   DateTime @default(now())
+  createdBy   String?
 
   @@unique([themeId, version])
   @@index([themeId])
@@ -337,36 +446,37 @@ model ThemeVersion {
 }
 
 model ThemeDraft {
-  id              String   @id @default(uuid())
-  themeId         String
-  theme           Theme    @relation(fields: [themeId], references: [id], onDelete: Cascade)
-  lightConfig     Json?
-  darkConfig      Json?
-  updatedAt       DateTime @updatedAt
+  id          String   @id @default(uuid())
+  themeId     String
+  theme       Theme    @relation(fields: [themeId], references: [id], onDelete: Cascade)
+  lightConfig Json?
+  darkConfig  Json?
+  updatedAt   DateTime @updatedAt
+
   @@map("theme_drafts")
 }
 
 model AuditLog {
-  id          String   @id @default(uuid())
-  userId      String?
-  user        User?    @relation(fields: [userId], references: [id])
-  username    String?
-  userRole    String?
-  module      String
-  action      String
-  entity      String
-  entityId    String?
-  description String?
-  oldValue    String?
-  newValue    String?
-  status      String   @default("Success")
-  level       String   @default("info")
-  ipAddress   String?
-  userAgent   String?
-  requestUrl  String?
-  httpMethod  String?
+  id           String   @id @default(uuid())
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id])
+  username     String?
+  userRole     String?
+  module       String
+  action       String
+  entity       String
+  entityId     String?
+  description  String?
+  oldValue     String?
+  newValue     String?
+  status       String   @default("Success")
+  level        String   @default("info")
+  ipAddress    String?
+  userAgent    String?
+  requestUrl   String?
+  httpMethod   String?
   errorMessage String?
-  created_at  DateTime @default(now())
+  created_at   DateTime @default(now())
 
   @@index([userId])
   @@index([entity])
@@ -378,29 +488,29 @@ model AuditLog {
 }
 
 model Favorite {
-  userId         String
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  propertyId     String
-  property       Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  created_at     DateTime @default(now())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  created_at DateTime @default(now())
 
   @@id([userId, propertyId])
   @@map("favorites")
 }
 
 model UserProfileFile {
-  id             String   @id @default(uuid())
-  userId         String
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  originalName   String
-  storageName    String   @unique
-  mimeType       String
-  fileSize       Int
-  category       String   // "image" | "document"
-  url            String
-  thumbnailUrl   String?
-  description    String?
-  created_at     DateTime @default(now())
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  originalName String
+  storageName  String   @unique
+  mimeType     String
+  fileSize     Int
+  category     String // "image" | "document"
+  url          String
+  thumbnailUrl String?
+  description  String?
+  created_at   DateTime @default(now())
 
   @@index([userId])
   @@map("user_profile_files")

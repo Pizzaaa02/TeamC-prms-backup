@@ -25,4 +25,7 @@ export const userApi = {
   changeRole(id, data) {
     return apiClient.post(`/users/${id}/change-role`, data);
   },
+  reviewKyc(id, status, notes) {
+    return apiClient.patch(`/users/${id}/kyc`, { status, notes });
+  },
 };

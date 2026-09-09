@@ -19,6 +19,10 @@ function getTopbarTitle(activePage) {
     bookings: 'Bookings',
     maintenance: 'Maintenance',
     categories: 'Property Categories',
+    reports: 'Assignment Reports',
+    finance: 'Portfolio Overview',
+    customizer: 'Website Customizer',
+    privacy: 'Privacy Center',
     profile: 'Profile',
     settings: 'Settings',
     help: 'Help Center',
@@ -64,6 +68,8 @@ function AgentLayout() {
               className={`agent-layout-side-btn ${isActive ? 'active' : ''}`}
               onClick={() => safeNavigate(item.path)}
               title={item.label}
+              aria-label={item.label}
+              aria-current={isActive ? 'page' : undefined}
               whileTap={{ scale: 0.96 }}
             >
               <Icon size={25} />
@@ -79,6 +85,8 @@ function AgentLayout() {
           className={`agent-layout-side-btn ${activePage === 'help' ? 'active' : ''}`}
           onClick={() => safeNavigate('/agent/help')}
           title="Help"
+          aria-label="Help"
+          aria-current={activePage === 'help' ? 'page' : undefined}
           whileTap={{ scale: 0.96 }}
         >
           <CircleHelp size={24} />
@@ -90,6 +98,7 @@ function AgentLayout() {
           className="agent-layout-side-btn logout"
           onClick={handleLogout}
           title="Logout"
+          aria-label="Logout"
           whileTap={{ scale: 0.96 }}
         >
           <LogOut size={24} />
@@ -99,21 +108,23 @@ function AgentLayout() {
 
       <section className="agent-layout-main" data-customize-id="global.content">
         <header className="agent-layout-topbar" data-customize-id="global.header">
-          <div className="agent-layout-brand" onClick={() => safeNavigate('/agent')} data-customize-id="global.brand">
+          <button type="button" className="agent-layout-brand" onClick={() => safeNavigate('/agent')} data-customize-id="global.brand" aria-label="Go to Agent dashboard">
             <h2 data-customize-id="global.brand.title">PRMS</h2>
             <span></span>
             <p data-customize-id="global.brand.subtitle">{getTopbarTitle(activePage)}</p>
-          </div>
+          </button>
 
           <div className="agent-layout-top-actions" data-customize-id="global.top-actions">
             <NotificationDropdown />
             <ThemeSwitcher />
 
-            <motion.div
+            <motion.button
+              type="button"
               className="agent-layout-avatar"
               whileHover={{ scale: 1.08 }}
               style={{ cursor: 'pointer' }}
               onClick={() => safeNavigate('/agent/profile')}
+              aria-label="Open Agent profile"
             >
               {profileImgUrl ? (
                 <img
@@ -124,7 +135,7 @@ function AgentLayout() {
               ) : (
                 initials
               )}
-            </motion.div>
+            </motion.button>
           </div>
         </header>
 

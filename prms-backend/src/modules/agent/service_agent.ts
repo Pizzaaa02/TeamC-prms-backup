@@ -206,3 +206,15 @@ export async function getAssignedProperties(agentId: string, page = 1, limit = 1
     total
   };
 }
+
+export async function getMyAssignedProperties(userId: string) {
+  const agent = await prisma.agent.findUnique({ where: { userId } });
+  if (!agent) return [];
+  return prisma.agentProperty.findMany({ where: { agentId: agent.id }, include: { property: { include: { images: { take: 1 }, category: true, owner: { select: { full_name: true, email: true } } } } } });
+}
+
+export async function getMyAssignedBookings(userId: string) {
+  const agent = await prisma.agent.findUnique({ where: { userId }, include: { agentProperties: true } });
+  if (!agent) return [];
+  return prisma.booking.findMany({ where: { propertyId: { in: agent.agentProperties.map((item) => item.propertyId) } }, include: { property: true, user: { select: { full_name: true, email: true } } }, orderBy: { created_at: 'desc' } });
+}

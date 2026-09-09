@@ -13,6 +13,9 @@ export const paymentApi = {
   markPaid(id) {
     return apiClient.patch(`/payments/${id}/mark-paid`);
   },
+  simulate(id) {
+    return apiClient.patch(`/payments/${id}/simulate`);
+  },
   getPaymentSummary() {
     return apiClient.get('/payments/summary');
   },

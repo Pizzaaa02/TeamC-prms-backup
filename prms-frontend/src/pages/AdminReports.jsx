@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { WalletCards, Clock, CheckCircle2, AlertTriangle, Printer } from 'lucide-react';
 import { paymentApi } from '../api/payment';
+import { apiClient } from '../api/ApiClient';
 import './AdminSimplePage.css';
 
 export default function AdminReports() {
@@ -30,6 +31,12 @@ export default function AdminReports() {
     { icon: AlertTriangle, label: 'Overdue Payments', value: report?.overdue ?? '...' },
   ];
 
+  const downloadCsv = async () => {
+    const response = await apiClient.get('/reports/export.csv', { responseType: 'blob' });
+    const url = URL.createObjectURL(response.data);
+    const link = document.createElement('a'); link.href = url; link.download = 'prms-revenue-report.csv'; link.click(); URL.revokeObjectURL(url);
+  };
+
   return (
     <>
       <section className="admin-simple-hero">
@@ -37,10 +44,11 @@ export default function AdminReports() {
           <h1>Reports &amp; Audit</h1>
           <p>Platform-wide revenue, payment activity, and financial health at a glance.</p>
         </div>
+        <div><button type="button" className="admin-simple-primary-btn" onClick={downloadCsv}>Export CSV</button>{' '}
         <button type="button" className="admin-simple-primary-btn" onClick={() => window.print()}>
           <Printer size={18} style={{ marginRight: 8, verticalAlign: 'text-bottom' }} />
           Print Report
-        </button>
+        </button></div>
       </section>
 
       {error && (

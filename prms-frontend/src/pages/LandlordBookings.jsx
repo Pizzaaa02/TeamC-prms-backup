@@ -12,7 +12,7 @@ export default function LandlordBookings() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await bookingApi.myBookings({ status: tab });
+      const res = await bookingApi.list({ status: tab.toUpperCase() });
       setBookings(res.data?.data || []);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
@@ -21,11 +21,11 @@ export default function LandlordBookings() {
   useEffect(() => { load(); }, [load]);
 
   const approve = async (id) => {
-    try { await bookingApi.update(id, { status: 'confirmed' }); load(); } catch (e) { alert(e.response?.data?.message || 'Failed'); }
+    try { await bookingApi.confirm(id); load(); } catch (e) { alert(e.response?.data?.error?.message || 'Failed'); }
   };
 
   const reject = async (id) => {
-    try { await bookingApi.update(id, { status: 'cancelled' }); load(); } catch (e) { alert(e.response?.data?.message || 'Failed'); }
+    try { await bookingApi.reject(id); load(); } catch (e) { alert(e.response?.data?.error?.message || 'Failed'); }
   };
 
   const handleStatusChange = async (id, val) => {
@@ -64,25 +64,25 @@ export default function LandlordBookings() {
             <tbody>
               {bookings.map(b => (
                 <tr key={b._id || b.id}>
-                  <td>{b.tenant?.full_name ?? b.tenant?.email}</td>
+                  <td>{b.user?.full_name ?? b.user?.email}</td>
                   <td>{b.property?.title}</td>
-                  <td>{b.checkIn}</td>
-                  <td>{b.checkOut}</td>
+                  <td>{new Date(b.start_date).toLocaleDateString()}</td>
+                  <td>{new Date(b.end_date).toLocaleDateString()}</td>
                   <td>
                     <span className={`status-badge status-${(b.status||'').toLowerCase()}`}>{b.status}</span>
                   </td>
-                  <td>$ {b.totalAmount ?? b.monthlyRate}</td>
+                  <td>RM {(b.totalAmount ?? b.property?.rent ?? 0).toLocaleString()}</td>
                   <td>
-                    {b.status === 'pending' && (
+                    {b.status === 'PENDING' && (
                       <>
                         <button className="btn btn-sm btn-primary" onClick={() => approve(b._id || b.id)}>Approve</button>{' '}
                         <button className="btn btn-sm btn-danger" onClick={() => reject(b._id || b.id)}>Reject</button>
                       </>
                     )}
-                    {b.status !== 'pending' && b.status !== 'cancelled' && (
+                    {b.status !== 'PENDING' && b.status !== 'CANCELLED' && (
                       <select value={(b.status || '')} onChange={e => handleStatusChange(b._id || b.id, e.target.value)} className="badge badge-warning">
-                        <option value="active">Active</option>
-                        <option value="completed">Completed</option>
+                        <option value="CHECKED_IN">Checked in</option>
+                        <option value="CHECKED_OUT">Checked out</option>
                       </select>
                     )}
                   </td>

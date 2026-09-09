@@ -4,6 +4,8 @@ import * as agentService from './service_agent';
 import { successResponse, paginatedResponse } from '../../utils/response';
 
 export class AgentController {
+  mineProperties = async (req: AuthRequest, res: Response) => res.json(successResponse(await agentService.getMyAssignedProperties(req.user!.id)));
+  mineBookings = async (req: AuthRequest, res: Response) => res.json(successResponse(await agentService.getMyAssignedBookings(req.user!.id)));
   list = async (req: Request, res: Response) => {
     try {
       const page = parseInt(req.query.page as string) || 1;

@@ -6,7 +6,7 @@ import { successResponse } from '../../utils/response';
 export class FavoriteController {
   getMyFavorites = async (req: Request, res: Response) => {
     try {
-      const userId = (req as AuthRequest).user?.id;
+      const userId = (req as AuthRequest).user!.id;
       const data = await favoriteService.getMyFavorites(userId);
       res.json(successResponse(data));
     } catch (error: any) { res.status(500).json({ success: false, error: { message: error.message } }); }
@@ -14,7 +14,7 @@ export class FavoriteController {
 
   checkFavorite = async (req: Request, res: Response) => {
     try {
-      const userId = (req as AuthRequest).user?.id;
+      const userId = (req as AuthRequest).user!.id;
       const propertyId = String(req.params.propertyId);
       const data = await favoriteService.checkFavorite(userId, propertyId);
       res.json(successResponse(data));
@@ -23,7 +23,7 @@ export class FavoriteController {
 
   addFavorite = async (req: Request, res: Response) => {
     try {
-      const userId = (req as AuthRequest).user?.id;
+      const userId = (req as AuthRequest).user!.id;
       const propertyId = String(req.params.propertyId);
       const data = await favoriteService.addFavorite(userId, propertyId);
       res.json(successResponse(data, 'Favorite added'));
@@ -32,7 +32,7 @@ export class FavoriteController {
 
   removeFavorite = async (req: Request, res: Response) => {
     try {
-      const userId = (req as AuthRequest).user?.id;
+      const userId = (req as AuthRequest).user!.id;
       const propertyId = String(req.params.propertyId);
       await favoriteService.removeFavorite(userId, propertyId);
       res.json(successResponse(null, 'Favorite removed'));

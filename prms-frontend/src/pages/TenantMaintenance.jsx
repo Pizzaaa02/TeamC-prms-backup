@@ -3,7 +3,7 @@ import Modal from '../components/Modal';
 import MaintenanceForm from '../components/MaintenanceForm';
 import { maintenanceApi } from '../api/maintenance';
 
-const STATUS_TABS = ['all', 'submitted', 'assigned', 'in_progress', 'resolved', 'closed'];
+const STATUS_TABS = ['all', 'open', 'in_progress', 'resolved', 'closed'];
 
 export default function TenantMaintenance() {
   const [tab, setTab] = useState('all');
@@ -17,8 +17,9 @@ export default function TenantMaintenance() {
     setLoading(true);
     setError('');
     try {
-      const res = await maintenanceApi.list({ status: tab === 'all' ? undefined : tab });
-      setTickets(res.data?.data || []);
+      const res = await maintenanceApi.mine();
+      const all = res.data?.data || [];
+      setTickets(tab === 'all' ? all : all.filter((ticket) => ticket.status === tab.toUpperCase()));
     } catch (e) { setError(e.message || 'Failed to load tickets'); console.error(e); }
     finally { setLoading(false); }
   }, [tab]);
@@ -66,7 +67,7 @@ export default function TenantMaintenance() {
 
       {/* Detail Modal */}
       {selected && (
-        <Modal isOpen={!!selected} onOpenChange={v => setSelected(v ? null : selected)} title="Ticket Detail">
+        <Modal isOpen={!!selected} onOpenChange={(open) => { if (!open) setSelected(null); }} title="Ticket Detail">
           <p>{selected.description}</p>
           <p><strong>Priority:</strong> {selected.priority} | <strong>Status:</strong> {selected.status}</p>
           <div className="notes mt-2">
@@ -79,7 +80,7 @@ export default function TenantMaintenance() {
       )}
 
       {/* Create Form */}
-      {formOpen && <MaintenanceForm onSuccess={() => setFormOpen(false)} />}
+      {formOpen && <MaintenanceForm onSuccess={() => { setFormOpen(false); load(); }} />}
     </div>
   );
 }

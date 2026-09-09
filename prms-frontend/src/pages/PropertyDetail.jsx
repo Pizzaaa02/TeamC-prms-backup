@@ -111,7 +111,7 @@ function BookingCard({ property, onBookClick }) {
         <div className="booking-card-header">
           <div>
             <div className="booking-price-line">
-              <span className="booking-price-amount">{formatRM(nightlyRate)} / {property.rent_period || 'month' || 'night'}</span>
+              <span className="booking-price-amount">{formatRM(nightlyRate)} / {property.rent_period || 'month'}</span>
               <span className="booking-rating">
                 <Star size={13} fill="#F59E0B" color="#F59E0B" />
                 {property.rating || '4.9'}{' '}
@@ -268,6 +268,7 @@ function PropertyDetail() {
   const [liked, setLiked] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
+  const [showMap, setShowMap] = useState(false);
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterStatus, setNewsletterStatus] = useState(null); // null | 'success' | 'error'
 
@@ -627,21 +628,23 @@ function PropertyDetail() {
               <h3 className="pd-section-title">Where you'll be</h3>
               <p className="pd-map-location">{property.address || property.city || 'Kuala Lumpur'}</p>
               <div className="pd-map">
-                {/* Embedded map placeholder */}
-                {property.latitude && property.longitude ? (
+                {showMap ? (
                   <iframe
                     title="Property location"
                     className="pd-map-iframe"
-                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${property.longitude - 0.01},${property.latitude - 0.01},${property.longitude + 0.01},${property.latitude + 0.01}&layer=mapnik&marker=${property.latitude},${property.longitude}`}
+                    src={`https://www.google.com/maps?q=${encodeURIComponent(property.latitude && property.longitude ? `${property.latitude},${property.longitude}` : property.address || property.city || 'Kuala Lumpur')}&output=embed`}
                     width="100%"
                     height="300"
                     frameBorder="0"
                     allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
                   />
                 ) : (
                   <div className="pd-map-placeholder">
                     <MapPin size={48} />
-                    <span>Map coming soon — address: {property.address || 'TBD'}</span>
+                    <span>Load Google Maps to view this location. Google may receive your IP address and browser information.</span>
+                    <button type="button" className="btn btn-outline" onClick={() => setShowMap(true)}>Load map</button>
                   </div>
                 )}
               </div>

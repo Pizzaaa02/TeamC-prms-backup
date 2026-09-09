@@ -60,26 +60,37 @@ async function main() {
     update: { passwordHash: await hash('Agent123!') },
   });
 
-  console.log('Seeding properties...');
-  const prop1 = await prisma.property.upsert({
-    where: { id: 'prop-001' },
-    create: {
-      id: 'prop-001', title: 'Modern apartment in downtown', address: '123 Main St',
-      property_type: 'apartment', rent: 2500, city: 'Springfield', state: 'IL',
-      ownerId: landlord.id, status: 'AVAILABLE',
-    },
-    update: { ownerId: landlord.id },
-  });
-
-  const prop2 = await prisma.property.upsert({
-    where: { id: 'prop-002' },
-    create: {
-      id: 'prop-002', title: 'Cozy studio near campus', address: '456 University Ave',
-      property_type: 'studio', rent: 1800, city: 'Springfield', state: 'IL',
-      ownerId: landlord.id, status: 'AVAILABLE',
-    },
-    update: { ownerId: landlord.id },
-  });
+  console.log('Seeding Malaysian property categories and 60 properties...');
+  const categoryDefinitions = [
+    ['Terrace', 'Landed terrace homes'], ['Double Storey', 'Two-storey family homes'],
+    ['Apartment', 'Practical apartment residences'], ['Condominium', 'Managed residences with facilities'],
+    ['Semi-D', 'Semi-detached landed homes'], ['Bungalow', 'Detached premium residences'],
+  ] as const;
+  const locations = [
+    ['Bangsar', 'Kuala Lumpur', 3.1291, 101.6788], ['Petaling Jaya', 'Selangor', 3.1073, 101.6067],
+    ['Shah Alam', 'Selangor', 3.0733, 101.5185], ['Subang Jaya', 'Selangor', 3.0567, 101.5851],
+    ['Cyberjaya', 'Selangor', 2.9213, 101.6559], ['Putrajaya', 'Putrajaya', 2.9264, 101.6964],
+    ['Johor Bahru', 'Johor', 1.4927, 103.7414], ['George Town', 'Penang', 5.4141, 100.3288],
+    ['Ipoh', 'Perak', 4.5975, 101.0901], ['Kota Kinabalu', 'Sabah', 5.9804, 116.0735],
+  ] as const;
+  const seededProperties = [];
+  for (let categoryIndex = 0; categoryIndex < categoryDefinitions.length; categoryIndex++) {
+    const [name, description] = categoryDefinitions[categoryIndex];
+    const category = await prisma.propertyCategory.upsert({ where: { name }, create: { name, description, isShared: true }, update: { description, isDisabled: false } });
+    for (let locationIndex = 0; locationIndex < locations.length; locationIndex++) {
+      const [city, state, latitude, longitude] = locations[locationIndex];
+      const number = categoryIndex * locations.length + locationIndex + 1;
+      const id = `my-property-${String(number).padStart(3, '0')}`;
+      const data = {
+        title: `${name} residence in ${city}`, address: `${12 + number}, Jalan Harmoni ${locationIndex + 1}, ${city}`,
+        property_type: name.toLowerCase().replace(/ /g, '-'), description: `A well-maintained ${name.toLowerCase()} home near public transport, schools and daily amenities.`,
+        rent: 1200 + categoryIndex * 650 + locationIndex * 90, city, state, latitude: latitude + categoryIndex * 0.001,
+        longitude: longitude + categoryIndex * 0.001, ownerId: landlord.id, categoryId: category.id, status: 'AVAILABLE' as const,
+      };
+      seededProperties.push(await prisma.property.upsert({ where: { id }, create: { id, ...data }, update: data }));
+    }
+  }
+  const [prop1, prop2] = seededProperties;
 
   console.log('Seeding amenities...');
   await prisma.amenity.deleteMany();
@@ -99,8 +110,8 @@ async function main() {
   });
   await prisma.systemSetting.upsert({
     where: { key: 'currency' },
-    create: { key: 'currency', value: 'USD', category: 'general', description: 'Default currency' },
-    update: {},
+    create: { key: 'currency', value: 'MYR', category: 'general', description: 'Default currency' },
+    update: { value: 'MYR' },
   });
 
   console.log('Seeding agent records...');

@@ -7,6 +7,8 @@ const router = express.Router();
 const agent = new AgentController();
 
 router.get('/', authenticate, adminOrAgent, agent.list);
+router.get('/mine/properties', authenticate, agentOnly, agent.mineProperties);
+router.get('/mine/bookings', authenticate, agentOnly, agent.mineBookings);
 router.get('/:id', authenticate, adminOrAgent, agent.getById);
 router.post('/', authenticate, adminOrAgent, agent.create);
 router.put('/:id', authenticate, adminOrAgent, agent.update);

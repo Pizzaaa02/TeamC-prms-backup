@@ -96,7 +96,7 @@ export default function UserManagement() {
       const flat = items.map((u) => ({
         ...u,
         role: u.UserRole?.[0]?.role?.name || u.role || 'Tenant',
-        is_kyc_verified: !!u.kyc_document_url || !!u.kyc_verified || false,
+        is_kyc_verified: u.kycStatus === 'VERIFIED',
       }))
 
       setUsers(flat)
@@ -158,6 +158,14 @@ export default function UserManagement() {
   function closeModal() {
     setMode(null)
     setSelectedUser(null)
+  }
+
+  async function handleKycReview(user, status) {
+    try {
+      await userApi.reviewKyc(user.id, status, status === 'VERIFIED' ? 'Identity review approved by administrator.' : 'Identity review requires resubmission.');
+      showToast(`KYC marked ${status.toLowerCase()}`)
+      loadUsers(pagination.page)
+    } catch (e) { showToast(e.message || 'Unable to update KYC', 'error') }
   }
 
   /* ── Form submit ── */
@@ -253,6 +261,7 @@ export default function UserManagement() {
           <p>Manage tenants, landlords, agents and admins. Control access, roles and account status.</p>
         </div>
         <motion.button
+          type="button"
           whileTap={{ scale: 0.96 }}
           className="user-mgmt-add-btn"
           onClick={openAdd}
@@ -281,19 +290,22 @@ export default function UserManagement() {
           <Search size={16} style={{ color: 'var(--text-secondary-light, #94a3b8)' }} />
           <input
             type="text"
+            aria-label="Search users by name or email"
             placeholder="Search by name or email..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           {search && (
-            <X size={14} onClick={() => setSearch('')} style={{ cursor: 'pointer', color: 'var(--text-secondary-light, #94a3b8)' }} />
+            <button type="button" className="user-mgmt-clear" onClick={() => setSearch('')} aria-label="Clear user search">
+              <X size={14} />
+            </button>
           )}
         </div>
 
         <div className="user-mgmt-filters">
           <div className="user-mgmt-filter-group">
             <Filter size={14} />
-            <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
+            <select aria-label="Filter users by role" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
               <option value="">All Roles</option>
               {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
@@ -301,7 +313,7 @@ export default function UserManagement() {
 
           <div className="user-mgmt-filter-group">
             <Filter size={14} />
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <select aria-label="Filter users by account status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
               <option value="">All Status</option>
               <option value="true">Active</option>
               <option value="false">Suspended</option>
@@ -364,6 +376,9 @@ export default function UserManagement() {
                       <AlertCircle size={11} /> Pending
                     </span>
                   )}
+                  <select className="role-select" value={u.kycStatus || 'NOT_SUBMITTED'} onChange={(e) => handleKycReview(u, e.target.value)} aria-label={`KYC status for ${u.email}`}>
+                    <option value="NOT_SUBMITTED">Not submitted</option><option value="PENDING">Pending</option><option value="VERIFIED">Verified</option><option value="REJECTED">Rejected</option>
+                  </select>
                 </div>
 
                 {/* Status */}
@@ -377,16 +392,16 @@ export default function UserManagement() {
 
                 {/* Actions */}
                 <div className="action-group">
-                  <button title="View" onClick={() => openView(u)}>
+                  <button type="button" title="View" aria-label={`View ${u.full_name || u.email}`} onClick={() => openView(u)}>
                     <Eye size={15} />
                   </button>
-                  <button title="Edit" onClick={() => openEdit(u)}>
+                  <button type="button" title="Edit" aria-label={`Edit ${u.full_name || u.email}`} onClick={() => openEdit(u)}>
                     <Edit2 size={15} />
                   </button>
-                  <button title={u.is_active ? 'Suspend' : 'Activate'} onClick={() => handleToggleActive(u)}>
+                  <button type="button" title={u.is_active ? 'Suspend' : 'Activate'} aria-label={`${u.is_active ? 'Suspend' : 'Activate'} ${u.full_name || u.email}`} onClick={() => handleToggleActive(u)}>
                     {u.is_active ? <UserX size={15} /> : <UserCheck size={15} />}
                   </button>
-                  <button title="Delete" onClick={() => handleDelete(u)} className="danger">
+                  <button type="button" title="Delete" aria-label={`Deactivate ${u.full_name || u.email}`} onClick={() => handleDelete(u)} className="danger">
                     <Trash2 size={15} />
                   </button>
                   {/* Role changer dropdown */}
@@ -395,6 +410,7 @@ export default function UserManagement() {
                     value={u.role}
                     onChange={(e) => handleChangeRole(u, e.target.value)}
                     title="Change role"
+                    aria-label={`Change role for ${u.full_name || u.email}`}
                   >
                     {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
                   </select>

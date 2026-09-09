@@ -129,12 +129,13 @@ router.patch('/:field', (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Value is required' });
   }
 
-  const err = validateField(field, value);
+  const normalizedField = String(field);
+  const err = validateField(normalizedField, value);
   if (err) {
     return res.status(400).json({ field, error: err, value });
   }
 
-  const typedField = field as keyof CustomizationConfig;
+  const typedField = normalizedField as keyof CustomizationConfig;
   config[typedField] = value;
   res.json({ [field as string]: config[typedField] });
 });

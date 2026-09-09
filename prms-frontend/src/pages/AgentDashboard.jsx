@@ -9,16 +9,15 @@ import {
   Clock,
   Download,
   Home,
-  Loader,
   Minus,
-  Search,
   SlidersHorizontal,
   Star,
-  Target,
   TrendingUp,
   Wrench,
 } from 'lucide-react'
 import { getImageUrl } from '../config/imageHelper';
+import { agentApi } from '../api/agents'
+import { maintenanceApi } from '../api/maintenance'
 import './AgentDashboard.css'
 
 function AgentDashboard() {
@@ -37,50 +36,32 @@ function AgentDashboard() {
     localStorage.setItem('prmsDashboardPath', '/agent')
 
     const fetchData = async () => {
-      setAssignedProperties([
-        {
-          id: '1',
-          title: 'Modern Apartment',
-          address: '123 Main St, City',
-          rent: 1200,
-          status: 'AVAILABLE',
-          image:
-            'https://images.unsplash.com/photo-1560448204-e02f11c3d0fd?q=80&w=1200&auto=format&fit=crop',
-        },
-        {
-          id: '2',
-          title: 'Luxury Condo',
-          address: '456 Park Ave, City',
-          rent: 2500,
-          status: 'RENTED',
-          image:
-            'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?q=80&w=1200&auto=format&fit=crop',
-        },
-      ])
-
-      setBookings([
-        {
-          id: '1',
-          propertyTitle: 'Modern Apartment',
-          tenant: 'John Doe',
-          startDate: '2023-06-01',
-          endDate: '2023-08-31',
-          status: 'CONFIRMED',
-        },
-      ])
-
-      setMaintenanceRequests([
-        {
-          id: '1',
-          propertyTitle: 'Modern Apartment',
-          title: 'Kitchen Faucet Repair',
-          priority: 'HIGH',
-          status: 'OPEN',
-          createdDate: '2023-06-10',
-        },
-      ])
-
-      setLoading(false)
+      try {
+        const [propertyRes, bookingRes, maintenanceRes] = await Promise.all([
+          agentApi.getMyProperties(), agentApi.getMyBookings(), maintenanceApi.list({ limit: 100 }),
+        ])
+        const properties = (propertyRes.data?.data || []).map((entry) => ({
+          ...entry.property,
+          image: entry.property?.images?.[0]?.url || '',
+        }))
+        setAssignedProperties(properties)
+        setBookings((bookingRes.data?.data || []).map((booking) => ({
+          id: booking.id,
+          propertyTitle: booking.property?.title || 'Property',
+          tenant: booking.user?.full_name || booking.user?.email || 'Tenant',
+          startDate: new Date(booking.start_date).toLocaleDateString('en-MY'),
+          endDate: new Date(booking.end_date).toLocaleDateString('en-MY'),
+          status: booking.status,
+        })))
+        const ticketRows = maintenanceRes.data?.data || []
+        setMaintenanceRequests(ticketRows.map((ticket) => ({
+          ...ticket,
+          propertyTitle: ticket.property?.title || 'Property',
+          createdDate: new Date(ticket.created_at).toLocaleDateString('en-MY'),
+        })))
+      } finally {
+        setLoading(false)
+      }
     }
 
     fetchData()
@@ -102,6 +83,20 @@ function AgentDashboard() {
 
   if (!user) {
     return null
+  }
+
+  const activeBookings = bookings.filter((booking) => ['CONFIRMED', 'CHECKED_IN'].includes(booking.status))
+  const rentedProperties = assignedProperties.filter((property) => property.status === 'RENTED')
+
+  function exportPortfolio() {
+    const rows = [['Property', 'Location', 'Monthly rent', 'Status'], ...assignedProperties.map((property) => [property.title, property.address || [property.city, property.state].filter(Boolean).join(', '), property.rent, property.status])]
+    const csv = rows.map((row) => row.map((value) => `"${String(value ?? '').replaceAll('"', '""')}"`).join(',')).join('\n')
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'agent-assigned-properties.csv'
+    link.click()
+    URL.revokeObjectURL(url)
   }
 
   /* ---- KPI Card helper ---- */
@@ -148,13 +143,13 @@ function AgentDashboard() {
         </div>
 
         <div className="landlord-page-actions">
-          <button type="button" className="btn-outline">
+          <button type="button" className="btn-outline" onClick={() => navigate(ROUTES.agent.properties)}>
             <SlidersHorizontal size={18} />
-            Filter
+            Manage
           </button>
-          <button type="button" className="btn-primary-solid">
+          <button type="button" className="btn-primary-solid" onClick={exportPortfolio}>
             <Download size={18} />
-            Export
+            Export CSV
           </button>
         </div>
       </div>
@@ -177,10 +172,10 @@ function AgentDashboard() {
           icon={CalendarDays}
           iconBg="icon-purple"
           label="Active Bookings"
-          value={String(bookings.length)}
-          sublabel="Confirmed leases"
-          trend="All active"
-          trendDir="up"
+          value={String(activeBookings.length)}
+          sublabel={`${bookings.length} total assigned`}
+          trend={activeBookings.length ? 'Active' : 'None active'}
+          trendDir={activeBookings.length ? 'up' : 'neutral'}
         />
 
         {/* Maintenance */}
@@ -199,10 +194,10 @@ function AgentDashboard() {
           icon={TrendingUp}
           iconBg="icon-emerald"
           label="Monthly Revenue"
-          value={`RM ${assignedProperties.reduce((s, p) => s + p.rent, 0).toLocaleString()}`}
-          sublabel="Estimated from active leases"
-          trend="+8%"
-          trendDir="up"
+          value={`RM ${rentedProperties.reduce((sum, property) => sum + (property.rent || 0), 0).toLocaleString()}`}
+          sublabel="From rented assigned properties"
+          trend={`${rentedProperties.length} rented`}
+          trendDir={rentedProperties.length ? 'up' : 'neutral'}
         />
       </section>
 
@@ -252,13 +247,14 @@ function AgentDashboard() {
                 <button
                   type="button"
                   className="btn-outline-sm"
-                  onClick={() => navigate(ROUTES.agent.properties)}
+                  onClick={() => navigate(ROUTES.agent.propertyDetail(prop.id))}
                 >
                   View Details
                 </button>
               </div>
             </div>
           ))}
+          {!assignedProperties.length && <p className="panel-subtitle">No properties are assigned to this account.</p>}
         </div>
       </section>
 
@@ -295,12 +291,13 @@ function AgentDashboard() {
                     {booking.startDate} → {booking.endDate}
                   </p>
                 </div>
-                <span className="agent-status-badge agent-status--confirmed">
-                  <CheckCircle2 size={12} />
+                <span className={`agent-status-badge ${['CONFIRMED', 'CHECKED_IN'].includes(booking.status) ? 'agent-status--confirmed' : 'agent-status--pending'}`}>
+                  {['CONFIRMED', 'CHECKED_IN'].includes(booking.status) ? <CheckCircle2 size={12} /> : <Clock size={12} />}
                   {booking.status}
                 </span>
               </div>
             ))}
+            {!bookings.length && <p className="panel-subtitle">No assigned bookings.</p>}
           </div>
         </div>
 
@@ -317,7 +314,7 @@ function AgentDashboard() {
               onClick={() => navigate(ROUTES.agent.maintenance)}
             >
               <Wrench size={16} />
-              New Request
+              View Queue
             </button>
           </div>
 
@@ -357,6 +354,7 @@ function AgentDashboard() {
                 </div>
               </div>
             ))}
+            {!maintenanceRequests.length && <p className="panel-subtitle">No assigned maintenance requests.</p>}
           </div>
         </div>
       </section>

@@ -124,6 +124,16 @@
   align-items: center;
   gap: 24px;
   cursor: pointer;
+  padding: 8px;
+  margin: -8px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  text-align: left;
+}
+
+.admin-layout-brand:hover {
+  background: var(--surface-container-low);
 }
 
 .admin-layout-brand h2 {
@@ -156,6 +166,13 @@
   display: flex;
   align-items: center;
   gap: 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.admin-layout-search:focus-within {
+  border-color: var(--secondary-accent);
+  background: var(--surface-container-lowest);
+  box-shadow: 0 0 0 4px rgba(129, 43, 202, 0.1);
 }
 
 .admin-layout-search input {
@@ -298,5 +315,92 @@
 
   .admin-layout-brand {
     flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 700px) {
+  .admin-layout-shell {
+    display: block;
+    min-height: 100dvh;
+  }
+
+  .admin-layout-sidebar {
+    width: 100%;
+    height: 70px;
+    min-height: 70px;
+    position: fixed;
+    inset: auto 0 0 0;
+    padding: 8px 10px;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    box-shadow: 0 -10px 30px rgba(15, 23, 42, 0.2);
+    z-index: 100;
+  }
+
+  .admin-layout-sidebar:hover {
+    width: 100%;
+    align-items: center;
+  }
+
+  .admin-layout-side-btn,
+  .admin-layout-sidebar:hover .admin-layout-side-btn {
+    width: 52px;
+    height: 52px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .admin-layout-sidebar .admin-layout-side-btn span,
+  .admin-layout-sidebar:hover .admin-layout-side-btn span,
+  .admin-layout-side-spacer {
+    display: none;
+  }
+
+  .admin-layout-topbar {
+    position: sticky;
+    height: auto;
+    padding: 14px 16px;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+  }
+
+  .admin-layout-brand {
+    min-width: 0;
+    gap: 10px;
+  }
+
+  .admin-layout-brand h2 {
+    font-size: 22px;
+  }
+
+  .admin-layout-brand span {
+    display: none;
+  }
+
+  .admin-layout-brand p {
+    max-width: 170px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 14px;
+  }
+
+  .admin-layout-search {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    height: 48px;
+    order: 3;
+  }
+
+  .admin-layout-top-actions {
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .admin-layout-content {
+    padding: 20px 14px 94px;
   }
 }

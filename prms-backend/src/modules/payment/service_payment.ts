@@ -41,11 +41,12 @@ export async function getFinanceSummary(userId: string) {
   };
 }
 
-export async function getPayments(page = 1, limit = 10) {
+export async function getPayments(page = 1, limit = 10, actor?: { id: string; role: string }) {
   const skip = (page - 1) * limit;
+  const where: any = actor?.role === 'Tenant' ? { userId: actor.id } : actor?.role === 'Landlord' ? { booking: { property: { ownerId: actor.id } } } : {};
   const [payments, total] = await Promise.all([
-    prisma.payment.findMany({ skip, take: limit, orderBy: { id: 'desc' }, include: { user: true, booking: { include: { property: true } } } }),
-    prisma.payment.count(),
+    prisma.payment.findMany({ where, skip, take: limit, orderBy: { created_at: 'desc' }, include: { user: true, booking: { include: { property: true } } } }),
+    prisma.payment.count({ where }),
   ]);
   return { payments, total };
 }
@@ -70,5 +71,19 @@ export async function createPayment(data: { bookingId: string; userId: string; a
 }
 
 export async function markAsPaid(id: string) {
-  return prisma.payment.update({ where: { id }, data: { status: 'PAID' } });
+  return prisma.$transaction(async (tx) => {
+    const payment = await tx.payment.update({ where: { id }, data: { status: 'PAID', paid_at: new Date(), reference: `SIM-${Date.now()}` } });
+    await tx.booking.update({ where: { id: payment.bookingId }, data: { paymentStatus: 'PAID' } });
+    return payment;
+  });
+}
+
+export async function simulatePayment(id: string, userId: string) {
+  const existing = await prisma.payment.findUnique({ where: { id } });
+  if (!existing) throw new Error('Payment not found');
+  if (existing.userId !== userId) throw new Error('Access denied');
+  if (existing.status === 'PAID') throw new Error('Payment has already been paid');
+  const payment = await markAsPaid(id);
+  await prisma.notification.create({ data: { userId, type: 'PAYMENT', title: 'Payment successful', message: `Your simulated payment reference is ${payment.reference}.` } });
+  return payment;
 }

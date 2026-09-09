@@ -1,24 +1,27 @@
 import { prisma } from '../../db';
 
-export async function getNotifications(userId: string | undefined, isRead?: boolean, archived?: boolean) {
+export async function getNotifications(userId: string | undefined, isRead?: boolean, _archived?: boolean) {
   const where: any = { userId };
-  if (isRead !== undefined) where.is_read = isRead;
-  if (archived !== undefined) where.archived = archived;
+  if (isRead !== undefined) where.isRead = isRead;
   return prisma.notification.findMany({
     where,
     orderBy: { created_at: 'desc' },
   });
 }
 
-export async function markRead(id: string) {
-  return prisma.notification.update({ where: { id }, data: { is_read: true } });
+export async function markRead(id: string, userId: string) {
+  const item = await prisma.notification.findFirst({ where: { id, userId } });
+  if (!item) throw new Error('Notification not found');
+  return prisma.notification.update({ where: { id }, data: { isRead: true } });
 }
 
 export async function markAllRead(userId: string) {
-  return prisma.notification.updateMany({ where: { userId, is_read: false }, data: { is_read: true } });
+  return prisma.notification.updateMany({ where: { userId, isRead: false }, data: { isRead: true } });
 }
 
-export async function deleteNotification(id: string) {
+export async function deleteNotification(id: string, userId: string) {
+  const item = await prisma.notification.findFirst({ where: { id, userId } });
+  if (!item) throw new Error('Notification not found');
   return prisma.notification.delete({ where: { id } });
 }
 
@@ -29,8 +32,7 @@ export async function createNotification(userId: string, data: { title: string; 
       title: data.title,
       message: data.message,
       type: data.type,
-      is_read: false,
-      archived: false,
+      isRead: false,
     },
   });
 }

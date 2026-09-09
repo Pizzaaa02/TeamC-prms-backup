@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, Link as RouterLink } from 'react-router-dom'
+import { useNavigate, Link as RouterLink, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { motion } from 'framer-motion'
 import {
@@ -36,6 +36,7 @@ const STATUS_FILTERS = [
 
 function Properties() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { user } = useAuth()
   const [properties, setProperties] = useState([])
   const [loading, setLoading] = useState(true)
@@ -43,8 +44,9 @@ function Properties() {
   const [viewMode, setViewMode] = useState('grid')
   const [activeType, setActiveType] = useState('all')
   const [activeStatus, setActiveStatus] = useState('all')
-  const [searchTerm, setSearchTerm] = useState('')
-  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const initialSearch = searchParams.get('search') || ''
+  const [searchTerm, setSearchTerm] = useState(initialSearch)
+  const [debouncedSearch, setDebouncedSearch] = useState(initialSearch.trim())
   const [currentPage, setCurrentPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
   const perPage = 12
@@ -53,16 +55,27 @@ function Properties() {
     setLoading(true)
     setError(null)
     try {
-      const { data } = await propertyApi.list({
-        page: currentPage,
-        limit: perPage,
-        type: activeType === 'all' ? undefined : activeType,
-        search: debouncedSearch || undefined,
-      })
+      const { data } = user?.role === 'Landlord'
+        ? await propertyApi.myProperties()
+        : await propertyApi.list({
+            page: currentPage,
+            limit: perPage,
+            type: activeType === 'all' ? undefined : activeType,
+            search: debouncedSearch || undefined,
+          })
       const list = data?.data || data?.properties || data
-      setProperties(Array.isArray(list) ? list : [])
+      const rows = Array.isArray(list) ? list : []
+      const landlordRows = user?.role === 'Landlord'
+        ? rows.filter((property) => {
+            const matchesType = activeType === 'all' || (property.property_type || '').toLowerCase() === activeType.toLowerCase()
+            const searchable = `${property.title || ''} ${property.address || ''} ${property.city || ''}`.toLowerCase()
+            return matchesType && (!debouncedSearch || searchable.includes(debouncedSearch.toLowerCase()))
+          })
+        : rows
+      setProperties(landlordRows)
 
       setTotalCount(
+        user?.role === 'Landlord' ? landlordRows.length :
         data?.pagination?.total ??
           data?.totalCount ??
           data?.total ??
