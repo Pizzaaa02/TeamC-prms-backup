@@ -42,8 +42,6 @@ function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
-  const [privacyConsent, setPrivacyConsent] = useState(false);
-  const [marketingConsent, setMarketingConsent] = useState(false);
 
   function handleChange(field, value) {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -58,12 +56,6 @@ function Register() {
     if (formData.password !== formData.confirmPassword) {
       setSubmitting(false);
       setFormError('Passwords do not match');
-      return;
-    }
-
-    if (!privacyConsent) {
-      setSubmitting(false);
-      setFormError('Please read and accept the Personal Data Protection Notice.');
       return;
     }
 

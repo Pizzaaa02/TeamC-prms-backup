@@ -160,56 +160,15 @@ function AdminLayout() {
 
       <section className="admin-layout-main" data-customize-id="global.content">
         <header className="admin-layout-topbar" data-customize-id="global.header">
-          <button type="button" className="admin-layout-brand" onClick={() => safeNavigate('/admin')} data-customize-id="global.brand" aria-label="Go to Admin dashboard">
+          <div className="admin-layout-brand" onClick={() => safeNavigate('/admin')} data-customize-id="global.brand">
             <h2 data-customize-id="global.brand.title">PRMS</h2>
             <span></span>
             <p data-customize-id="global.brand.subtitle">{getTopbarTitle(activePage)}</p>
-          </button>
+          </div>
 
-          <div className="admin-layout-search" data-customize-id="global.search" ref={searchBoxRef}>
+          <div className="admin-layout-search" data-customize-id="global.search">
             <Search size={22} />
-            <input
-              type="text"
-              aria-label="Search users and properties"
-              placeholder="Search users, properties..."
-              value={globalSearch}
-              onChange={(e) => setGlobalSearch(e.target.value)}
-              onFocus={() => { if (globalSearch.trim()) setSearchOpen(true) }}
-            />
-            {searchOpen && (
-              <div className="admin-layout-search-dropdown">
-                {searchLoading ? (
-                  <div className="admin-layout-search-empty">Searching...</div>
-                ) : !searchResults.users.length && !searchResults.properties.length ? (
-                  <div className="admin-layout-search-empty">No results for "{globalSearch}"</div>
-                ) : (
-                  <>
-                    {searchResults.users.length > 0 && (
-                      <div className="admin-layout-search-group">
-                        <span className="admin-layout-search-label">Users</span>
-                        {searchResults.users.map((u) => (
-                          <button key={u.id} type="button" onClick={() => goToUser(u)}>
-                            <span className="admin-layout-search-title">{u.full_name || 'Unnamed'}</span>
-                            <span className="admin-layout-search-sub">{u.email}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    {searchResults.properties.length > 0 && (
-                      <div className="admin-layout-search-group">
-                        <span className="admin-layout-search-label">Properties</span>
-                        {searchResults.properties.map((p) => (
-                          <button key={p.id} type="button" onClick={() => goToProperty(p)}>
-                            <span className="admin-layout-search-title">{p.title}</span>
-                            <span className="admin-layout-search-sub">{p.address}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
+            <input type="text" placeholder="Search users, properties..." />
           </div>
 
           <div className="admin-layout-top-actions" data-customize-id="global.top-actions">
