@@ -22,12 +22,16 @@ function TenantBookingModal({ property, isOpen, onClose }) {
   const [endDate, setEndDate] = useState('');
   const [checking, setChecking] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [overlapResult, setOverlapResult] = useState(null); // null | { hasOverlap, conflictingBookings }
+  const [overlapResult, setOverlapResult] = useState(null); // null | { hasOverlap, conflictCount }
   const [submitResult, setSubmitResult] = useState(null);   // null | { success: boolean, message: string }
 
   /* ---- Check availability against existing bookings ---- */
   async function handleCheckAvailability() {
     if (!startDate || !endDate) return;
+    if (endDate <= startDate) {
+      setOverlapResult({ hasOverlap: false, error: 'Check-out must be after check-in.' });
+      return;
+    }
     setChecking(true);
     setOverlapResult(null);
     setSubmitResult(null);
@@ -41,7 +45,6 @@ function TenantBookingModal({ property, isOpen, onClose }) {
     } catch (err) {
       setOverlapResult({
         hasOverlap: false,
-        conflictingBookings: [],
         error: err.response?.data?.error?.message || 'Failed to check availability',
       });
     } finally {
@@ -98,6 +101,9 @@ function TenantBookingModal({ property, isOpen, onClose }) {
         >
           <motion.div
             className="tenant-booking-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="tenant-booking-title"
             initial={{ opacity: 0, y: 30, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -129,7 +135,7 @@ function TenantBookingModal({ property, isOpen, onClose }) {
             ) : (
               /* ---- Booking form ---- */
               <>
-                <h2 className="tenant-booking-title">
+                <h2 className="tenant-booking-title" id="tenant-booking-title">
                   <CalendarDays size={22} />
                   Book this property
                 </h2>
@@ -205,29 +211,8 @@ function TenantBookingModal({ property, isOpen, onClose }) {
                           <strong>Date(s) already booked</strong>
                         </div>
                         <p>
-                          The following existing booking{overlapResult.conflictingBookings?.length > 1 ? 's' : ''} conflict with your selection:
+                          Those dates conflict with an existing reservation. Please choose another date range.
                         </p>
-                        <ul className="tenant-booking-conflicts">
-                          {(overlapResult.conflictingBookings || []).map(
-                            (b, i) => (
-                              <li key={b?.id ?? i}>
-                                <span className="tenant-booking-conflict-range">
-                                  {b?.start_date || '—'} → {b?.end_date || '—'}
-                                </span>
-                                {b?.tenantName && (
-                                  <span className="tenant-booking-conflict-tenant">
-                                    {b.tenantName}
-                                  </span>
-                                )}
-                                {b?.status && (
-                                  <span className="tenant-booking-conflict-status">
-                                    {b.status}
-                                  </span>
-                                )}
-                              </li>
-                            )
-                          )}
-                        </ul>
                       </div>
                     )}
 

@@ -40,7 +40,7 @@ export const bookingApi = {
   /**
    * Check for date overlap on a property.
    * Expects params: { propertyId, startDate, endDate }
-   * Returns { hasOverlap: boolean, conflictingBookings: Booking[] }
+   * Returns { hasOverlap: boolean, conflictCount: number } without personal data.
    */
   checkOverlap(params) {
     return apiClient.get('/bookings/check-overlap', { params });

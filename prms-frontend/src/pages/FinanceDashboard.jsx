@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { apiClient } from '../api';
 import {
@@ -7,11 +7,10 @@ import {
   CreditCard,
   CalendarDays,
   Filter,
-  ChevronLeft,
-  ChevronRight,
   Download,
 } from 'lucide-react';
 import './FinanceDashboard.css';
+import './TenantPayments.css';
 
 function FinanceDashboard() {
   const [summary, setSummary] = useState(null);
@@ -19,26 +18,31 @@ function FinanceDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
 
-  async function load() {
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError('');
     try {
       const [summaryRes, paymentsRes] = await Promise.all([
         apiClient.get('/payments/summary'),
-        apiClient.get('/payments'),
+        apiClient.get('/payments', { params: { page, limit: 10, status: statusFilter || undefined } }),
       ]);
       setSummary(summaryRes.data?.data);
       setPayments(paymentsRes.data?.data?.data ?? paymentsRes.data?.data ?? []);
+      setPages(Math.max(1, paymentsRes.data?.pagination?.totalPages || 1));
     } catch (e) {
       setError(e.message || 'Failed to load finance data');
       console.error('Failed to load finance data', e);
     } finally {
       setLoading(false);
     }
-  }
+  }, [page, statusFilter]);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
   const filtered = statusFilter
     ? payments.filter((p) => p.status === statusFilter)
@@ -75,9 +79,10 @@ function FinanceDashboard() {
       <div className="finance-header">
         <h1>Finance Overview</h1>
         <button className="finance-export-btn" title="Export" onClick={exportCsv}>
-          <Download size={16} /> Export
+          <Download size={16} /> Export current page
         </button>
       </div>
+      <p>University project payment simulation. Entries marked “simulation” do not represent money transfers.</p>
 
       {/* Summary Cards */}
       <div className="finance-cards">
@@ -166,11 +171,13 @@ function FinanceDashboard() {
           <h2>Payment History</h2>
           <div className="finance-filter">
             <Filter size={14} />
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <select aria-label="Payment status" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}>
               <option value="">All Statuses</option>
               <option value="PENDING">Pending</option>
               <option value="PAID">Paid</option>
-              <option value="OVERDUE">Overdue</option>
+              <option value="FAILED">Failed</option>
+              <option value="UNPAID">Unpaid</option>
+              <option value="REFUNDED">Refunded</option>
             </select>
           </div>
         </div>
@@ -207,6 +214,11 @@ function FinanceDashboard() {
               )}
             </tbody>
           </table>
+        </div>
+        <div className="payment-pagination">
+          <button disabled={page === 1} onClick={() => setPage(p => p - 1)}>Previous</button>
+          <span>Page {page} of {pages}</span>
+          <button disabled={page >= pages} onClick={() => setPage(p => p + 1)}>Next</button>
         </div>
       </div>
     </div>

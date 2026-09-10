@@ -1,23 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { bookingApi } from '../api/booking';
-import './SharedPageShell.css';
 
-// Real BookingStatus enum: PENDING/CONFIRMED/CHECKED_IN/CHECKED_OUT/CANCELLED.
-// Tab keys stay lowercase for display, mapped to the real enum value below.
-const ALL_TABS = ['pending', 'confirmed', 'checked_in', 'checked_out', 'cancelled'];
-const TAB_LABELS = { pending: 'Pending', confirmed: 'Confirmed', checked_in: 'Active', checked_out: 'Completed', cancelled: 'Cancelled' };
-
-function formatAmount(amount) {
-  const value = Number(amount);
-  if (Number.isNaN(value)) return amount ? `RM ${amount}` : 'N/A';
-  return new Intl.NumberFormat('en-MY', { style: 'currency', currency: 'MYR', minimumFractionDigits: 2 }).format(value);
-}
-
-function formatDate(date) {
-  if (!date) return 'N/A';
-  const parsed = new Date(date);
-  return Number.isNaN(parsed.getTime()) ? date : parsed.toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
-}
+const ALL_TABS = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'confirmed', label: 'Confirmed' },
+  { value: 'checked_in', label: 'Checked In' },
+  { value: 'checked_out', label: 'Checked Out' },
+  { value: 'cancelled', label: 'Cancelled' },
+];
 
 export default function LandlordBookings() {
   const [tab, setTab] = useState('pending');
@@ -27,26 +17,24 @@ export default function LandlordBookings() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await bookingApi.landlordBookings();
+      const res = await bookingApi.list({ status: tab.toUpperCase() });
       setBookings(res.data?.data || []);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
-  }, []);
+  }, [tab]);
 
   useEffect(() => { load(); }, [load]);
 
-  const visibleBookings = bookings.filter((b) => (b.status || '').toUpperCase() === tab.toUpperCase());
-
   const approve = async (id) => {
-    try { await bookingApi.update(id, { status: 'CONFIRMED' }); load(); } catch (e) { alert(e.response?.data?.message || 'Failed'); }
+    try { await bookingApi.confirm(id); load(); } catch (e) { alert(e.response?.data?.error?.message || 'Failed'); }
   };
 
   const reject = async (id) => {
-    try { await bookingApi.update(id, { status: 'CANCELLED' }); load(); } catch (e) { alert(e.response?.data?.message || 'Failed'); }
+    try { await bookingApi.reject(id); load(); } catch (e) { alert(e.response?.data?.error?.message || 'Failed'); }
   };
 
   const handleStatusChange = async (id, val) => {
-    try { await bookingApi.update(id, { status: val }); load(); } catch (e) { alert(e.response?.data?.message || 'Failed'); }
+    try { await bookingApi.update(id, { status: val }); load(); } catch (e) { alert(e.response?.data?.error?.message || 'Failed'); }
   };
 
   return (
@@ -58,9 +46,9 @@ export default function LandlordBookings() {
 
       <div className="card-table">
         <div className="status-filter">
-          {ALL_TABS.map(t => (
-            <button key={t} className={tab === t ? 'active' : ''} onClick={() => setTab(t)}>
-              {TAB_LABELS[t]}
+          {ALL_TABS.map(({ value, label }) => (
+            <button key={value} className={tab === value ? 'active' : ''} onClick={() => setTab(value)}>
+              {label}
             </button>
           ))}
         </div>
@@ -79,16 +67,16 @@ export default function LandlordBookings() {
               </tr>
             </thead>
             <tbody>
-              {visibleBookings.map(b => (
+              {bookings.map(b => (
                 <tr key={b._id || b.id}>
                   <td>{b.user?.full_name ?? b.user?.email}</td>
                   <td>{b.property?.title}</td>
-                  <td>{formatDate(b.start_date)}</td>
-                  <td>{formatDate(b.end_date)}</td>
+                  <td>{new Date(b.start_date).toLocaleDateString()}</td>
+                  <td>{new Date(b.end_date).toLocaleDateString()}</td>
                   <td>
-                    <span className={`shell-status-badge status-${(b.status||'').toLowerCase()}`}>{b.status}</span>
+                    <span className={`status-badge status-${(b.status||'').toLowerCase()}`}>{b.status}</span>
                   </td>
-                  <td>{formatAmount(b.totalAmount)}</td>
+                  <td>RM {(b.totalAmount ?? b.property?.rent ?? 0).toLocaleString()}</td>
                   <td>
                     {b.status === 'PENDING' && (
                       <>
@@ -97,22 +85,15 @@ export default function LandlordBookings() {
                       </>
                     )}
                     {b.status === 'CONFIRMED' && (
-                      <select value={(b.status || '')} onChange={e => handleStatusChange(b._id || b.id, e.target.value)} className="shell-badge shell-badge-warning">
-                        <option value="CONFIRMED">Confirmed</option>
-                        <option value="CHECKED_IN">Active</option>
-                        <option value="CHECKED_OUT">Completed</option>
-                      </select>
+                      <button className="btn btn-sm btn-primary" onClick={() => handleStatusChange(b._id || b.id, 'CHECKED_IN')}>Check In</button>
                     )}
                     {b.status === 'CHECKED_IN' && (
-                      <select value={(b.status || '')} onChange={e => handleStatusChange(b._id || b.id, e.target.value)} className="shell-badge shell-badge-warning">
-                        <option value="CHECKED_IN">Active</option>
-                        <option value="CHECKED_OUT">Completed</option>
-                      </select>
+                      <button className="btn btn-sm btn-primary" onClick={() => handleStatusChange(b._id || b.id, 'CHECKED_OUT')}>Check Out</button>
                     )}
                   </td>
                 </tr>
               ))}
-              {!visibleBookings.length && <tr><td colSpan={7}>No bookings found.</td></tr>}
+              {!bookings.length && <tr><td colSpan={7}>No bookings found.</td></tr>}
             </tbody>
           </table>
         )}

@@ -222,6 +222,7 @@ function AppRoutes() {
           element={<PropertyDetail />}
         />
         <Route path="bookings" element={<AdminBookings />} />
+        <Route path="agreements" element={<Agreements />} />
         <Route
           path="finance"
           element={
@@ -289,6 +290,7 @@ function AppRoutes() {
         <Route path="properties/edit/:id" element={<PropertyEdit />} />
         <Route path="properties/:id" element={<PropertyDetail />} />
         <Route path="bookings" element={<LandlordBookings />} />
+        <Route path="agreements" element={<Agreements />} />
         <Route
           path="finance"
           element={
