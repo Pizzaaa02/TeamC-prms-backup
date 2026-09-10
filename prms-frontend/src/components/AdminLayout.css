@@ -114,7 +114,6 @@
   grid-template-columns: 310px 430px 1fr;
   align-items: center;
   gap: 30px;
-  z-index: 9;
   background: var(--card-bg);
   border-bottom: 2px solid var(--border-color);
 }
@@ -124,6 +123,16 @@
   align-items: center;
   gap: 24px;
   cursor: pointer;
+  padding: 8px;
+  margin: -8px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  text-align: left;
+}
+
+.admin-layout-brand:hover {
+  background: var(--surface-container-low);
 }
 
 .admin-layout-brand h2 {
@@ -147,7 +156,6 @@
 }
 
 .admin-layout-search {
-  position: relative;
   height: 56px;
   padding: 0 22px;
   border: 2px solid var(--border-color);
@@ -165,77 +173,6 @@
   background: transparent;
   color: var(--text-color);
   font-size: 16px;
-}
-
-.admin-layout-search-dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  right: 0;
-  background: var(--surface);
-  border: 2px solid var(--border-color);
-  border-radius: 18px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
-  padding: 10px;
-  max-height: 360px;
-  overflow-y: auto;
-  z-index: 50;
-}
-
-.admin-layout-search-empty {
-  padding: 14px 12px;
-  color: var(--text-secondary);
-  font-size: 14px;
-  text-align: center;
-}
-
-.admin-layout-search-group {
-  display: flex;
-  flex-direction: column;
-}
-
-.admin-layout-search-group + .admin-layout-search-group {
-  margin-top: 6px;
-  padding-top: 6px;
-  border-top: 1px solid var(--border-color);
-}
-
-.admin-layout-search-label {
-  padding: 6px 10px 2px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-secondary);
-}
-
-.admin-layout-search-group button {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  width: 100%;
-  padding: 8px 10px;
-  border: none;
-  background: transparent;
-  border-radius: 10px;
-  cursor: pointer;
-  text-align: left;
-}
-
-.admin-layout-search-group button:hover {
-  background: var(--surface-container, rgba(0, 0, 0, 0.05));
-}
-
-.admin-layout-search-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-color);
-}
-
-.admin-layout-search-sub {
-  font-size: 12px;
-  color: var(--text-secondary);
 }
 
 .admin-layout-top-actions {
@@ -297,6 +234,35 @@
   }
 
   .admin-layout-brand {
-    flex-wrap: wrap;
+    min-width: 0;
+    gap: 10px;
+  }
+
+  .admin-layout-brand h2 {
+    font-size: 22px;
+  }
+
+  .admin-layout-brand span {
+    display: none;
+  }
+
+  .admin-layout-brand p {
+    max-width: 170px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 14px;
+  }
+
+  .admin-layout-search {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    height: 48px;
+    order: 3;
+  }
+
+  .admin-layout-top-actions {
+    justify-content: flex-end;
+    gap: 8px;
   }
 }

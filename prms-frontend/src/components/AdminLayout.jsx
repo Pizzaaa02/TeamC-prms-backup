@@ -121,6 +121,8 @@ function AdminLayout() {
               className={`admin-layout-side-btn ${isActive ? 'active' : ''}`}
               onClick={() => safeNavigate(item.path)}
               title={item.label}
+              aria-label={item.label}
+              aria-current={isActive ? 'page' : undefined}
               whileTap={{ scale: 0.96 }}
             >
               <Icon size={25} />
@@ -136,6 +138,8 @@ function AdminLayout() {
           className={`admin-layout-side-btn ${activePage === 'help' ? 'active' : ''}`}
           onClick={() => safeNavigate('/admin/help')}
           title="Help"
+          aria-label="Help"
+          aria-current={activePage === 'help' ? 'page' : undefined}
           whileTap={{ scale: 0.96 }}
         >
           <CircleHelp size={24} />
@@ -147,6 +151,7 @@ function AdminLayout() {
           className="admin-layout-side-btn logout"
           onClick={handleLogout}
           title="Logout"
+          aria-label="Log out"
           whileTap={{ scale: 0.96 }}
         >
           <LogOut size={24} />
@@ -162,49 +167,9 @@ function AdminLayout() {
             <p data-customize-id="global.brand.subtitle">{getTopbarTitle(activePage)}</p>
           </div>
 
-          <div className="admin-layout-search" data-customize-id="global.search" ref={searchBoxRef}>
+          <div className="admin-layout-search" data-customize-id="global.search">
             <Search size={22} />
-            <input
-              type="text"
-              placeholder="Search users, properties..."
-              value={globalSearch}
-              onChange={(e) => setGlobalSearch(e.target.value)}
-              onFocus={() => { if (globalSearch.trim()) setSearchOpen(true) }}
-            />
-            {searchOpen && (
-              <div className="admin-layout-search-dropdown">
-                {searchLoading ? (
-                  <div className="admin-layout-search-empty">Searching...</div>
-                ) : !searchResults.users.length && !searchResults.properties.length ? (
-                  <div className="admin-layout-search-empty">No results for "{globalSearch}"</div>
-                ) : (
-                  <>
-                    {searchResults.users.length > 0 && (
-                      <div className="admin-layout-search-group">
-                        <span className="admin-layout-search-label">Users</span>
-                        {searchResults.users.map((u) => (
-                          <button key={u.id} type="button" onClick={() => goToUser(u)}>
-                            <span className="admin-layout-search-title">{u.full_name || 'Unnamed'}</span>
-                            <span className="admin-layout-search-sub">{u.email}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    {searchResults.properties.length > 0 && (
-                      <div className="admin-layout-search-group">
-                        <span className="admin-layout-search-label">Properties</span>
-                        {searchResults.properties.map((p) => (
-                          <button key={p.id} type="button" onClick={() => goToProperty(p)}>
-                            <span className="admin-layout-search-title">{p.title}</span>
-                            <span className="admin-layout-search-sub">{p.address}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
+            <input type="text" placeholder="Search users, properties..." />
           </div>
 
           <div className="admin-layout-top-actions" data-customize-id="global.top-actions">

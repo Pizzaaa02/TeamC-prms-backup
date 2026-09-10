@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { BookOpen, CircleHelp, Mail, ShieldCheck } from 'lucide-react';
 import PropTypes from 'prop-types';
 import './AgentSimplePage.css';
 

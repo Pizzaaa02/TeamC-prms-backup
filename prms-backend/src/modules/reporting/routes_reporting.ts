@@ -8,6 +8,7 @@ const ctrl = new ReportingController();
 
 router.use(authenticate, adminOrLandlord);
 router.get('/dashboard', ctrl.dashboard);
+router.get('/export.csv', ctrl.exportCsv);
 router.get('/revenue', ctrl.revenue);
 router.get('/properties', ctrl.properties);
 router.get('/occupancy', ctrl.occupancy);

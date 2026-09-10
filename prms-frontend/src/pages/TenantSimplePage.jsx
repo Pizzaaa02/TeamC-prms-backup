@@ -104,10 +104,10 @@ const subPages = {
     title: 'Help Center',
     subtitle: 'Find tenant guides, support cases, and troubleshooting help.',
     icon: CircleHelp,
-    primaryBtn: 'Submit Ticket',
+    primaryBtn: null,
     cardKeys: ['cases', 'guides', 'sla', 'status'],
     cardLabels: ['Open Cases', 'Help Guides', 'Response SLA', 'System Status'],
-    columns: ['Topic', 'Category', 'Priority', 'Status', 'Action'],
+    columns: ['Topic', 'Category', 'Priority', 'Status'],
     renderRow: null,
   },
 }
@@ -124,6 +124,12 @@ export default function TenantSimplePage({ type, label, children }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
+
+  const visibleRows = rows.filter((row) => {
+    if (!searchTerm.trim()) return true
+    const cells = cfg.renderRow ? cfg.renderRow(row) : row
+    return cells?.some((cell) => String(cell).toLowerCase().includes(searchTerm.trim().toLowerCase()))
+  })
 
   /* ---- Fetch real data when type or user changes ---- */
    
@@ -199,9 +205,9 @@ export default function TenantSimplePage({ type, label, children }) {
             { label: 'System Status', value: 'Online' },
           ])
           setRows([
-            ['How to pay rent', 'Payments', 'Low', 'Available', 'Open'],
-            ['Booking cancellation guide', 'Bookings', 'Low', 'Available', 'Open'],
-            ['Maintenance request issue', 'Maintenance', 'Medium', 'Open', 'View'],
+            ['How to pay rent', 'Payments', 'Low', 'Available'],
+            ['Booking cancellation guide', 'Bookings', 'Low', 'Available'],
+            ['Maintenance request issue', 'Maintenance', 'Medium', 'Available'],
           ])
         }
       } catch (e) {
@@ -267,9 +273,11 @@ export default function TenantSimplePage({ type, label, children }) {
           <h1>{cfg.title}</h1>
           <p>{cfg.subtitle}</p>
         </div>
-        <button type="button" className="tenant-simple-primary-btn" onClick={handlePrimaryBtn}>
-          {cfg.primaryBtn}
-        </button>
+        {cfg.primaryBtn && (
+          <button type="button" className="tenant-simple-primary-btn" onClick={handlePrimaryBtn}>
+            {cfg.primaryBtn}
+          </button>
+        )}
       </section>
 
       {children && <section style={{ marginBottom: '1.5rem' }}>{children}</section>}

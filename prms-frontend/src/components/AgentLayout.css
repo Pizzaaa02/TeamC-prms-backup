@@ -7,6 +7,9 @@
 }
 
 .agent-layout-sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
   width: 96px;
   height: 100vh;
   position: sticky;
@@ -106,6 +109,9 @@
 }
 
 .agent-layout-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 80;
   height: 88px;
   position: sticky;
   top: 0;
@@ -124,6 +130,11 @@
   align-items: center;
   gap: 24px;
   cursor: pointer;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
 }
 
 .agent-layout-brand h2 {
@@ -214,4 +225,56 @@
   .agent-layout-content {
     padding: 24px;
   }
+}
+
+@media (max-width: 700px) {
+  .agent-layout-shell { display: block; }
+  .agent-layout-main { padding-bottom: 82px; }
+  .agent-layout-sidebar,
+  .agent-layout-sidebar:hover {
+    position: fixed;
+    inset: auto 0 0 0;
+    width: 100%;
+    height: 74px;
+    min-height: 0;
+    padding: 8px 10px max(8px, env(safe-area-inset-bottom));
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    background: var(--card-bg);
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -10px 30px rgba(15, 23, 42, 0.12);
+    z-index: 110;
+  }
+  .agent-layout-side-btn,
+  .agent-layout-sidebar:hover .agent-layout-side-btn {
+    min-width: 64px;
+    width: 64px;
+    height: 56px;
+    padding: 5px 6px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    border-radius: 12px;
+  }
+  .agent-layout-side-btn svg { width: 21px; height: 21px; }
+  .agent-layout-side-btn span,
+  .agent-layout-sidebar:hover .agent-layout-side-btn span {
+    opacity: 1;
+    width: auto;
+    max-width: 62px;
+    font-size: 10px;
+    line-height: 1;
+  }
+  .agent-layout-side-spacer,
+  .agent-layout-side-btn.logout { display: none; }
+  .agent-layout-topbar { padding: 14px 16px; flex-direction: row; align-items: center; }
+  .agent-layout-brand { gap: 12px; flex-wrap: nowrap; }
+  .agent-layout-brand h2 { font-size: 23px; }
+  .agent-layout-brand p { font-size: 14px; }
+  .agent-layout-brand span { height: 26px; }
+  .agent-layout-top-actions { gap: 10px; }
+  .agent-layout-content { padding: 18px 14px; }
 }

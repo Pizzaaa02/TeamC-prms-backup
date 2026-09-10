@@ -68,6 +68,8 @@ function TenantLayout() {
               className={`tenant-layout-side-btn ${isActive ? 'active' : ''}`}
               onClick={() => safeNavigate(item.path)}
               title={item.label}
+              aria-label={item.label}
+              aria-current={isActive ? 'page' : undefined}
               whileTap={{ scale: 0.96 }}
             >
               <Icon size={25} />
@@ -83,6 +85,8 @@ function TenantLayout() {
           className={`tenant-layout-side-btn ${activePage === 'help' ? 'active' : ''}`}
           onClick={() => safeNavigate('/tenant/help')}
           title="Help"
+          aria-label="Help"
+          aria-current={activePage === 'help' ? 'page' : undefined}
           whileTap={{ scale: 0.96 }}
         >
           <CircleHelp size={24} />
@@ -94,6 +98,7 @@ function TenantLayout() {
           className="tenant-layout-side-btn logout"
           onClick={handleLogout}
           title="Logout"
+          aria-label="Logout"
           whileTap={{ scale: 0.96 }}
         >
           <LogOut size={24} />
@@ -103,7 +108,7 @@ function TenantLayout() {
 
       <section className="tenant-layout-main" data-customize-id="global.content">
         <header className="tenant-layout-topbar" data-customize-id="global.header">
-          <div className="tenant-layout-brand" onClick={() => safeNavigate('/tenant')} data-customize-id="global.brand">
+          <button type="button" className="tenant-layout-brand" onClick={() => safeNavigate('/tenant')} data-customize-id="global.brand" aria-label="Go to tenant dashboard">
             <h2 data-customize-id="global.brand.title">PRMS</h2>
             <span></span>
             <p data-customize-id="global.brand.subtitle">{getTopbarTitle(activePage)}</p>

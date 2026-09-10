@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Building2, Eye, EyeOff, LockKeyhole, LogIn, Mail } from 'lucide-react';
@@ -8,6 +8,10 @@ import ThemeSwitcher from '../components/ThemeSwitcher';
 
 function Login() {
   const navigate = useNavigate();
+  const { clearRegistration } = useRegistration();
+  // Clear onboarding only after arriving here; clearing it on /register can
+  // trigger the role guard before navigation finishes.
+  useEffect(() => { clearRegistration(); }, [clearRegistration]);
   const { login, googleLogin, error, clearError, loading } = useAuth();
 
   const [email, setEmail] = useState('');
@@ -15,12 +19,14 @@ function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [remember, setRemember] = useState(false);
+  const [googleError, setGoogleError] = useState('');
 
   async function handleSubmit(e) {
     if (e) e.preventDefault();
     if (submitting) return;
 
     clearError();
+    setGoogleError('');
     setSubmitting(true);
 
     const result = await login({ email, password }, navigate);
@@ -35,13 +41,18 @@ function Login() {
 
   /* AUTH-009: Google OAuth login handler */
   async function handleGoogleLogin() {
+    if (submitting) return;
     clearError();
+    setGoogleError('');
+    setSubmitting(true);
     try {
       const googleAuth = await signInWithGoogle();
       await googleLogin(googleAuth,navigate);
     } 
     catch (err) {
-      console.error('Google login failed', err);
+      setGoogleError(googleAuthErrorMessage(err));
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -155,11 +166,12 @@ function Login() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.46, duration: 0.35 }}
             >
-              <label>Email Address</label>
+              <label htmlFor="login-email">Email Address</label>
 
               <div className="input-box">
                 <Mail size={22} />
                 <input
+                  id="login-email"
                   type="email"
                   placeholder="name@example.com"
                   value={email}
@@ -175,11 +187,12 @@ function Login() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.54, duration: 0.35 }}
             >
-              <label>Password</label>
+              <label htmlFor="login-password">Password</label>
 
               <div className="input-box">
                 <LockKeyhole size={22} />
                 <input
+                  id="login-password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   value={password}
@@ -187,14 +200,15 @@ function Login() {
                   required
                   autoComplete="current-password"
                 />
-                <span
+                <button
+                  type="button"
                   className="input-right-icon"
                   onClick={() => setShowPassword((v) => !v)}
-                  role="button"
-                  tabIndex={0}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
                 >
                   {showPassword ? <EyeOff size={22} /> : <Eye size={22} />}
-                </span>
+                </button>
               </div>
             </motion.div>
 
@@ -217,14 +231,14 @@ function Login() {
             </motion.div>
 
             {/* Error message */}
-            {error && (
+            {(error || googleError) && (
               <motion.div
                 className="login-error"
                 role="alert"
                 initial={false}
                 animate={{ opacity: 1, y: 0 }}
               >
-                {error}
+                {error || googleError}
               </motion.div>
             )}
 
@@ -261,6 +275,7 @@ function Login() {
               <motion.button
                 type="button"
                 onClick={handleGoogleLogin}
+                disabled={submitting || loading}
                 whileHover={{ y: -2 }}
                 whileTap={{ scale: 0.97 }}
               >

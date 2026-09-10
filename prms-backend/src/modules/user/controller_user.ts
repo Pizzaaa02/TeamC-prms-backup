@@ -110,4 +110,12 @@ export class UserController {
       res.json(successResponse(null, `Role changed to ${role}`));
     } catch (error: any) { HELPERS(req).log({ action: 'CHANGE_USER_ROLE', entity: 'User', status: 'Failed', level: 'error', errorMessage: error.message }); res.status(400).json({ success: false, error: { message: error.message } }); }
   };
+
+  reviewKyc = async (req: Request, res: Response) => {
+    try {
+      const user = await userService.reviewKyc(String(req.params.id), req.body.status, req.body.notes);
+      HELPERS(req).log({ action: 'REVIEW_KYC', entity: 'User', entityId: user.id, description: `KYC status changed to ${req.body.status}` });
+      res.json(successResponse(user, 'KYC review saved'));
+    } catch (error: any) { res.status(400).json({ success: false, error: { message: error.message } }); }
+  };
 }

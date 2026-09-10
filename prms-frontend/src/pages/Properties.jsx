@@ -36,6 +36,7 @@ const STATUS_FILTERS = [
 
 function Properties() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { user } = useAuth()
   const [searchParams] = useSearchParams()
   const [properties, setProperties] = useState([])
@@ -56,16 +57,27 @@ function Properties() {
     setLoading(true)
     setError(null)
     try {
-      const { data } = await propertyApi.list({
-        page: currentPage,
-        limit: perPage,
-        type: activeType === 'all' ? undefined : activeType,
-        search: debouncedSearch || undefined,
-      })
+      const { data } = user?.role === 'Landlord'
+        ? await propertyApi.myProperties()
+        : await propertyApi.list({
+            page: currentPage,
+            limit: perPage,
+            type: activeType === 'all' ? undefined : activeType,
+            search: debouncedSearch || undefined,
+          })
       const list = data?.data || data?.properties || data
-      setProperties(Array.isArray(list) ? list : [])
+      const rows = Array.isArray(list) ? list : []
+      const landlordRows = user?.role === 'Landlord'
+        ? rows.filter((property) => {
+            const matchesType = activeType === 'all' || (property.property_type || '').toLowerCase() === activeType.toLowerCase()
+            const searchable = `${property.title || ''} ${property.address || ''} ${property.city || ''}`.toLowerCase()
+            return matchesType && (!debouncedSearch || searchable.includes(debouncedSearch.toLowerCase()))
+          })
+        : rows
+      setProperties(landlordRows)
 
       setTotalCount(
+        user?.role === 'Landlord' ? landlordRows.length :
         data?.pagination?.total ??
           data?.totalCount ??
           data?.total ??

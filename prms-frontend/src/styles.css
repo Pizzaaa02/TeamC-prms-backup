@@ -72,6 +72,21 @@ input {
   font-family: inherit;
 }
 
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid rgba(138, 43, 226, 0.32);
+  outline-offset: 3px;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
 /* ================= THEME VARIABLES ================= */
 
 /* Independent light theme variables */
@@ -340,7 +355,9 @@ input {
   align-items: center;
   justify-content: center;
   padding: 48px;
-  background: var(--page-bg);
+  background:
+    radial-gradient(circle at 85% 15%, rgba(184, 76, 255, 0.08), transparent 28%),
+    var(--page-bg);
 }
 
 .login-theme-toggle {
@@ -353,6 +370,11 @@ input {
 .login-form-box {
   width: 100%;
   max-width: 700px;
+  padding: clamp(28px, 4vw, 52px);
+  border: 1px solid rgba(198, 198, 205, 0.7);
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--card-bg) 94%, transparent);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.09);
 }
 
 .login-form-box h2 {
@@ -385,7 +407,7 @@ form label {
   border: 2px solid var(--border-color);
   border-radius: var(--radius-lg);
   background: var(--card-bg);
-  transition: border-color 0.2s, box-shadow 0.15s;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
 }
 
 .input-box:focus-within {
@@ -407,8 +429,37 @@ form label {
 }
 
 .input-right-icon {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: transparent;
   cursor: pointer;
   color: var(--outline);
+}
+
+.input-right-icon:hover {
+  color: var(--secondary-accent);
+  background: var(--surface-hover);
+}
+
+.text-btn {
+  padding: 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--secondary-accent);
+  font-size: 16px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.text-btn:hover {
+  background: var(--secondary-fixed);
+  color: var(--on-secondary-fixed-variant);
 }
 
 .form-row {
@@ -446,11 +497,13 @@ form label {
   justify-content: center;
   gap: 14px;
   cursor: pointer;
-  transition: background 0.2s;
+  box-shadow: 0 12px 24px rgba(129, 43, 202, 0.2);
+  transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
 }
 
 .primary-btn:hover {
   background: var(--on-secondary-fixed-variant);
+  box-shadow: 0 16px 30px rgba(129, 43, 202, 0.28);
 }
 
 .divider {
@@ -476,7 +529,7 @@ form label {
 
 .social-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 24px;
 }
 
@@ -533,6 +586,54 @@ form label {
 
 .register-half label {
   margin-top: 0;
+}
+
+.social-row button:disabled,
+.primary-btn:disabled {
+  box-shadow: none;
+}
+
+.registration-consents { display: grid; gap: 12px; margin: 20px 0; }
+.registration-consents label { display: flex; align-items: flex-start; gap: 10px; margin: 0; font-size: 13px; line-height: 1.5; }
+.registration-consents input { width: 18px; height: 18px; margin-top: 2px; flex: 0 0 auto; }
+
+img, video, iframe { max-width: 100%; }
+.page-shell, .admin-content, .landlord-content, .tenant-content, .agent-content { min-width: 0; }
+.card-table { overflow-x: auto; }
+.table { width: 100%; min-width: 720px; }
+.status-filter { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; }
+.status-filter button { flex: 0 0 auto; }
+.page-header { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: flex-start; }
+
+@media (max-width: 760px) {
+  .login-page, .role-page { display: block; min-height: 100dvh; }
+  .login-left, .role-left { display: none; }
+  .login-right, .role-right { min-height: 100dvh; padding: 24px 18px; width: 100%; overflow: hidden; }
+  .login-form-box, .role-card { width: 100%; max-width: 100%; min-width: 0; }
+  .login-form-box { padding: 26px 20px; border-radius: 18px; }
+  .input-box { min-width: 0; height: 58px; padding: 0 14px; }
+  .input-box input { min-width: 0; width: 100%; font-size: 16px; }
+  .form-subtitle { margin-bottom: 28px; }
+  form label { font-size: 15px; }
+  .register-row { grid-template-columns: 1fr; gap: 0; }
+  .form-row { align-items: flex-start; gap: 12px; flex-wrap: wrap; margin: 22px 0; }
+  .primary-btn { height: 60px; font-size: 18px; }
+  .divider { margin: 32px 0 24px; gap: 12px; }
+  .divider p { letter-spacing: 3px; font-size: 12px; white-space: nowrap; }
+  .social-row button { height: 58px; font-size: 18px; }
+  .signup-text { margin-top: 34px; font-size: 16px; }
+  .registration-consents label { font-size: 13px; }
+  .properties-page { padding: 14px; }
+  .properties-header, .properties-toolbar, .properties-view-controls { align-items: stretch; flex-direction: column; }
+  .properties-search { max-width: none; }
+  .properties-type-filters { overflow-x: auto; }
+  .properties-list .property-card { flex-direction: column; }
+  .properties-list .property-card-image { width: 100%; }
+  .admin-content { padding: 20px 14px; }
+  .live-badge { width: auto; }
+  .admin-top-actions { width: 100%; justify-content: space-between; }
+  .page-shell { padding: 14px; }
+  .table { font-size: 13px; }
 }
 
 /* ================= ROLE SELECTION PAGE ================= */
@@ -675,6 +776,8 @@ form label {
 
 .role-option:hover {
   border-color: #a855f7;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
 }
 
 .role-option.selected {
@@ -739,10 +842,22 @@ form label {
   justify-content: center;
   gap: 14px;
   cursor: pointer;
+  box-shadow: 0 12px 24px rgba(5, 5, 5, 0.14);
+  transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
 }
 
 .continue-btn:hover {
   background: #111827;
+  box-shadow: 0 16px 30px rgba(5, 5, 5, 0.2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* ================= ADMIN DASHBOARD ================= */
@@ -1688,4 +1803,13 @@ body.customization-mode [data-customize-id].customization-hover {
 .trend-pill.neutral {
   color: var(--status-warning);
   background: rgba(245, 158, 11, 0.1);
+}
+
+/* Final responsive guardrails must follow the desktop role-card rules. */
+@media (max-width: 760px) {
+  .role-right { width: 100%; min-width: 0; padding: 20px 14px; overflow: hidden; }
+  .role-card { width: 100%; max-width: 100%; min-width: 0; padding: 32px 18px 24px; box-sizing: border-box; }
+  .role-options, .role-option { min-width: 0; }
+  .role-option { grid-template-columns: 48px minmax(0, 1fr) 28px; padding: 16px 12px; }
+  .step-line { width: clamp(48px, 18vw, 100px); margin-inline: 8px; }
 }

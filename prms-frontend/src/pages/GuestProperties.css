@@ -658,3 +658,9 @@
   color: var(--text-secondary);
   margin: 0;
 }
+
+@media (max-width: 600px) {
+  .guest-area-tabs { width: 100%; max-width: 100%; min-width: 0; overflow-x: auto; overscroll-behavior-inline: contain; }
+  .guest-area-tabs button { flex: 0 0 auto; }
+  .guest-filter-row { min-width: 0; overflow: hidden; }
+}

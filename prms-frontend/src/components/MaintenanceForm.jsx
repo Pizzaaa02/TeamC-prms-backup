@@ -1,7 +1,6 @@
 import {
   useState,
   useEffect,
-  useCallback,
 } from 'react';
 
 import Modal from '../components/Modal';
@@ -36,7 +35,9 @@ export default function MaintenanceForm({ onSuccess, initialData }) {
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    loadProperties();
+    propertyApi.list({ limit: 100 })
+      .then((res) => setProperties(res.data?.data || []))
+      .catch(() => setProperties([]));
   }, []);
 
   const loadProperties = async () => {
@@ -84,7 +85,6 @@ export default function MaintenanceForm({ onSuccess, initialData }) {
     set('files', Array.from(e.target.files));
   };
 
-  const statusOpts = ['submitted', 'assigned', 'in_progress', 'resolved', 'closed'];
   const steps = [
     { label: 'Details', icon: '📝' },
     { label: 'Photos', icon: '📷' },

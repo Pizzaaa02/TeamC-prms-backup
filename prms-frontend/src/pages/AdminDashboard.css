@@ -27,6 +27,18 @@
   min-height: 390px;
 }
 
+.kpi-card,
+.panel-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.kpi-card:hover,
+.panel-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--outline-variant);
+}
+
 .admin-search {
   width: 280px;
   height: 40px;
@@ -323,5 +335,30 @@
   }
   .clusters-grid {
     flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 560px) {
+  .admin-dashboard-page .landlord-page-title-row {
+    align-items: stretch;
+  }
+
+  .admin-dashboard-page .landlord-page-actions,
+  .admin-dashboard-page .btn-primary-solid {
+    width: 100%;
+  }
+
+  .admin-dashboard-page .btn-primary-solid {
+    justify-content: center;
+  }
+
+  .admin-table-row {
+    min-height: 64px;
+  }
+
+  .admin-user-info p {
+    max-width: 165px;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }

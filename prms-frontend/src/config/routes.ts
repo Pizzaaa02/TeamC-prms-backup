@@ -62,6 +62,7 @@ export const ROUTES = {
     properties: '/tenant/properties',
     propertyDetail: (id: string) => `/tenant/properties/${id}`,
     bookings: '/tenant/bookings',
+    agreements: '/tenant/agreements',
     payments: '/tenant/payments',
     paymentDetails: (id: string) => `/tenant/payments/${id}`,
     maintenance: '/tenant/maintenance',

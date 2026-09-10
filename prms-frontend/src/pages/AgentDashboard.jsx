@@ -9,12 +9,9 @@ import {
   Clock,
   Download,
   Home,
-  Loader,
   Minus,
-  Search,
   SlidersHorizontal,
   Star,
-  Target,
   TrendingUp,
   Wrench,
 } from 'lucide-react'
@@ -114,6 +111,20 @@ function AgentDashboard() {
     return null
   }
 
+  const activeBookings = bookings.filter((booking) => ['CONFIRMED', 'CHECKED_IN'].includes(booking.status))
+  const rentedProperties = assignedProperties.filter((property) => property.status === 'RENTED')
+
+  function exportPortfolio() {
+    const rows = [['Property', 'Location', 'Monthly rent', 'Status'], ...assignedProperties.map((property) => [property.title, property.address || [property.city, property.state].filter(Boolean).join(', '), property.rent, property.status])]
+    const csv = rows.map((row) => row.map((value) => `"${String(value ?? '').replaceAll('"', '""')}"`).join(',')).join('\n')
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'agent-assigned-properties.csv'
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
   /* ---- KPI Card helper ---- */
   function KpiCard({ icon: Icon, iconBg, label, value, sublabel, trend, trendDir }) {
     const TrendIcon =
@@ -158,13 +169,13 @@ function AgentDashboard() {
         </div>
 
         <div className="landlord-page-actions">
-          <button type="button" className="btn-outline">
+          <button type="button" className="btn-outline" onClick={() => navigate(ROUTES.agent.properties)}>
             <SlidersHorizontal size={18} />
-            Filter
+            Manage
           </button>
-          <button type="button" className="btn-primary-solid">
+          <button type="button" className="btn-primary-solid" onClick={exportPortfolio}>
             <Download size={18} />
-            Export
+            Export CSV
           </button>
         </div>
       </div>
@@ -187,10 +198,10 @@ function AgentDashboard() {
           icon={CalendarDays}
           iconBg="icon-purple"
           label="Active Bookings"
-          value={String(bookings.length)}
-          sublabel="Confirmed leases"
-          trend="All active"
-          trendDir="up"
+          value={String(activeBookings.length)}
+          sublabel={`${bookings.length} total assigned`}
+          trend={activeBookings.length ? 'Active' : 'None active'}
+          trendDir={activeBookings.length ? 'up' : 'neutral'}
         />
 
         {/* Maintenance */}
@@ -209,10 +220,10 @@ function AgentDashboard() {
           icon={TrendingUp}
           iconBg="icon-emerald"
           label="Monthly Revenue"
-          value={`RM ${assignedProperties.reduce((s, p) => s + p.rent, 0).toLocaleString()}`}
-          sublabel="Estimated from active leases"
-          trend="+8%"
-          trendDir="up"
+          value={`RM ${rentedProperties.reduce((sum, property) => sum + (property.rent || 0), 0).toLocaleString()}`}
+          sublabel="From rented assigned properties"
+          trend={`${rentedProperties.length} rented`}
+          trendDir={rentedProperties.length ? 'up' : 'neutral'}
         />
       </section>
 
@@ -262,13 +273,14 @@ function AgentDashboard() {
                 <button
                   type="button"
                   className="btn-outline-sm"
-                  onClick={() => navigate(ROUTES.agent.properties)}
+                  onClick={() => navigate(ROUTES.agent.propertyDetail(prop.id))}
                 >
                   View Details
                 </button>
               </div>
             </div>
           ))}
+          {!assignedProperties.length && <p className="panel-subtitle">No properties are assigned to this account.</p>}
         </div>
       </section>
 
@@ -305,12 +317,13 @@ function AgentDashboard() {
                     {booking.startDate} → {booking.endDate}
                   </p>
                 </div>
-                <span className="agent-status-badge agent-status--confirmed">
-                  <CheckCircle2 size={12} />
+                <span className={`agent-status-badge ${['CONFIRMED', 'CHECKED_IN'].includes(booking.status) ? 'agent-status--confirmed' : 'agent-status--pending'}`}>
+                  {['CONFIRMED', 'CHECKED_IN'].includes(booking.status) ? <CheckCircle2 size={12} /> : <Clock size={12} />}
                   {booking.status}
                 </span>
               </div>
             ))}
+            {!bookings.length && <p className="panel-subtitle">No assigned bookings.</p>}
           </div>
         </div>
 
@@ -327,7 +340,7 @@ function AgentDashboard() {
               onClick={() => navigate(ROUTES.agent.maintenance)}
             >
               <Wrench size={16} />
-              New Request
+              View Queue
             </button>
           </div>
 
@@ -367,6 +380,7 @@ function AgentDashboard() {
                 </div>
               </div>
             ))}
+            {!maintenanceRequests.length && <p className="panel-subtitle">No assigned maintenance requests.</p>}
           </div>
         </div>
       </section>

@@ -17,11 +17,13 @@ const HELPERS = (req: Request) => {
 };
 
 export class MaintenanceController {
+  mine = async (req: AuthRequest, res: Response) => res.json(successResponse(await maintenanceService.getMyTickets(req.user!.id)));
   list = async (req: Request, res: Response) => {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
-      const { tickets, total } = await maintenanceService.getTickets(page, limit);
+      const auth = req as AuthRequest;
+      const { tickets, total } = await maintenanceService.getTickets(page, limit, undefined, req.query.status as string, auth.user!);
       HELPERS(req).log({ action: 'VIEW_TICKETS', entity: 'MaintenanceTicket', description: `Listed tickets (page ${page})` });
       res.json(paginatedResponse(tickets, page, limit, total));
     } catch (error: any) { HELPERS(req).log({ action: 'VIEW_TICKETS', entity: 'MaintenanceTicket', status: 'Failed', level: 'error', errorMessage: error.message }); res.status(500).json({ success: false, error: { message: error.message } }); }
@@ -64,7 +66,7 @@ export class MaintenanceController {
   update = async (req: AuthRequest, res: Response) => {
     try {
       const ticket = await maintenanceService.updateTicket(String(req.params.id), req.body);
-      HELPERS(req).log({ action: 'UPDATE_TICKET', entity: 'MaintenanceTicket', entityId: req.params.id, description: `Updated ticket ${req.params.id}` });
+      HELPERS(req).log({ action: 'UPDATE_TICKET', entity: 'MaintenanceTicket', entityId: String(req.params.id), description: `Updated ticket ${req.params.id}` });
       res.json(successResponse(ticket, 'Ticket updated'));
     } catch (error: any) { HELPERS(req).log({ action: 'UPDATE_TICKET', entity: 'MaintenanceTicket', status: 'Failed', level: 'error', errorMessage: error.message }); res.status(400).json({ success: false, error: { message: error.message } }); }
   };
@@ -72,7 +74,7 @@ export class MaintenanceController {
   resolve = async (req: AuthRequest, res: Response) => {
     try {
       await maintenanceService.resolveTicket(String(req.params.id));
-      HELPERS(req).log({ action: 'RESOLVE_TICKET', entity: 'MaintenanceTicket', entityId: req.params.id, description: `Resolved ticket ${req.params.id}` });
+      HELPERS(req).log({ action: 'RESOLVE_TICKET', entity: 'MaintenanceTicket', entityId: String(req.params.id), description: `Resolved ticket ${req.params.id}` });
       res.json(successResponse(null, 'Ticket resolved'));
     } catch (error: any) { HELPERS(req).log({ action: 'RESOLVE_TICKET', entity: 'MaintenanceTicket', status: 'Failed', level: 'error', errorMessage: error.message }); res.status(400).json({ success: false, error: { message: error.message } }); }
   };
@@ -81,6 +83,7 @@ export class MaintenanceController {
     try {
       const ticket = await maintenanceService.getTicketById(String(req.params.id));
       if (!ticket) return res.status(404).json({ success: false, error: { message: 'Ticket not found' } });
+      if (req.user!.role === 'Tenant' && ticket.userId !== req.user!.id) return res.status(403).json({ success: false, error: { message: 'Access denied' } });
       HELPERS(req).log({ action: 'VIEW_TICKET', entity: 'MaintenanceTicket', entityId: ticket.id, description: `Viewed ticket ${ticket.id}` });
       res.json(successResponse(ticket));
     } catch (error: any) { HELPERS(req).log({ action: 'VIEW_TICKET', entity: 'MaintenanceTicket', status: 'Failed', level: 'error', errorMessage: error.message }); res.status(500).json({ success: false, error: { message: error.message } }); }

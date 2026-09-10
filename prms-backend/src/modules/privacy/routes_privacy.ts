@@ -1,0 +1,20 @@
+import express from 'express';
+import { authenticate } from '../../middleware/auth';
+import { adminOnly } from '../../middleware/rbac';
+import { PrivacyController } from './controller_privacy';
+
+const router = express.Router();
+const ctrl = new PrivacyController();
+router.get('/notice', ctrl.notice);
+router.use(authenticate);
+router.post('/consents', ctrl.consent);
+router.get('/consents', ctrl.history);
+router.get('/export', ctrl.export);
+router.post('/requests', ctrl.createRequest);
+router.get('/requests/mine', ctrl.myRequests);
+router.get('/requests', adminOnly, ctrl.allRequests);
+router.patch('/requests/:id', adminOnly, ctrl.updateRequest);
+router.get('/breaches', adminOnly, ctrl.breaches);
+router.post('/breaches', adminOnly, ctrl.createBreach);
+router.post('/retention/cleanup', adminOnly, ctrl.cleanup);
+export default router;

@@ -10,17 +10,17 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock,
-  Download,
   Heart,
   Home,
-  Loader,
   Minus,
-  Search,
-  SlidersHorizontal,
   WalletCards,
   Wrench,
 } from 'lucide-react'
 import './TenantDashboard.css'
+import { bookingApi } from '../api/booking'
+import { maintenanceApi } from '../api/maintenance'
+import { paymentApi } from '../api/payment'
+import { favoritesApi } from '../api/favorites'
 
 function formatAmount(amount) {
   const value = Number(amount)
@@ -267,7 +267,7 @@ function TenantDashboard() {
             <article className="saved-card" key={`${property.name}-${i}`}>
               <img src={property.image} alt={property.name} />
 
-              <button type="button" className="heart-btn">
+              <button type="button" className="heart-btn" aria-label={`Remove ${property.name} from saved properties`} onClick={(event) => { event.stopPropagation(); removeSavedProperty(property) }}>
                 <Heart size={24} fill="currentColor" />
               </button>
 

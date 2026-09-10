@@ -10,7 +10,6 @@ import {
   User,
   UserPlus,
   Phone,
-  MapPin,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useRegistration } from '../contexts/RegistrationContext';
@@ -67,15 +66,16 @@ function Register() {
         phone: formData.phone,
         password: formData.password,
         role: selectedRole,
-      },
-      navigate
+        privacyConsent,
+        marketingConsent,
+      }
     );
 
     if (!result.success) {
-      clearError();
+      setFormError(result.error || 'Registration failed. Please try again.');
     } else {
-      /* Issue #7: Clear registration state after successful registration */
-      clearRegistration();
+      // Login clears registration state after navigation has completed.
+      navigate('/login', { replace: true });
     }
 
     setSubmitting(false);
@@ -189,10 +189,11 @@ function Register() {
             >
               <div className="register-row">
                 <div className="register-half">
-                  <label>First Name</label>
+                  <label htmlFor="register-first-name">First Name</label>
                   <div className="input-box">
                     <User size={22} />
                     <input
+                      id="register-first-name"
                       type="text"
                       placeholder="John"
                       value={formData.firstName}
@@ -203,10 +204,11 @@ function Register() {
                 </div>
 
                 <div className="register-half">
-                  <label>Last Name</label>
+                  <label htmlFor="register-last-name">Last Name</label>
                   <div className="input-box">
                     <User size={22} />
                     <input
+                      id="register-last-name"
                       type="text"
                       placeholder="Doe"
                       value={formData.lastName}
@@ -223,10 +225,11 @@ function Register() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.46, duration: 0.35 }}
             >
-              <label>Email Address</label>
+              <label htmlFor="register-email">Email Address</label>
               <div className="input-box">
                 <Mail size={22} />
                 <input
+                  id="register-email"
                   type="email"
                   placeholder="name@example.com"
                   value={formData.email}
@@ -241,10 +244,11 @@ function Register() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.52, duration: 0.35 }}
             >
-              <label>Phone</label>
+              <label htmlFor="register-phone">Phone</label>
               <div className="input-box">
                 <Phone size={22} />
                 <input
+                  id="register-phone"
                   type="tel"
                   placeholder="+65 1234 5678"
                   value={formData.phone}
@@ -258,10 +262,11 @@ function Register() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.58, duration: 0.35 }}
             >
-              <label>Password</label>
+              <label htmlFor="register-password">Password</label>
               <div className="input-box">
                 <LockKeyhole size={22} />
                 <input
+                  id="register-password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Min 6 characters"
                   value={formData.password}
@@ -269,14 +274,15 @@ function Register() {
                   required
                   minLength={6}
                 />
-                <span
+                <button
+                  type="button"
                   className="input-right-icon"
                   onClick={() => setShowPassword((v) => !v)}
-                  role="button"
-                  tabIndex={0}
+                  aria-label={showPassword ? 'Hide passwords' : 'Show passwords'}
+                  aria-pressed={showPassword}
                 >
                   {showPassword ? <EyeOff size={22} /> : <Eye size={22} />}
-                </span>
+                </button>
               </div>
             </motion.div>
 
@@ -285,10 +291,11 @@ function Register() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.64, duration: 0.35 }}
             >
-              <label>Confirm Password</label>
+              <label htmlFor="register-confirm-password">Confirm Password</label>
               <div className="input-box">
                 <LockKeyhole size={22} />
                 <input
+                  id="register-confirm-password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Re-enter password"
                   value={formData.confirmPassword}
@@ -298,6 +305,17 @@ function Register() {
                 />
               </div>
             </motion.div>
+
+            <div className="registration-consents">
+              <label>
+                <input type="checkbox" checked={privacyConsent} onChange={(e) => setPrivacyConsent(e.target.checked)} required />
+                <span>I have read and accept the <a href="/privacy" target="_blank" rel="noreferrer">Personal Data Protection Notice</a>. I consent to processing required to create and operate my PRMS account.</span>
+              </label>
+              <label>
+                <input type="checkbox" checked={marketingConsent} onChange={(e) => setMarketingConsent(e.target.checked)} />
+                <span>I separately consent to optional direct-marketing communications. I may withdraw this at any time.</span>
+              </label>
+            </div>
 
             {/* Error message */}
             {(formError || error) && (
