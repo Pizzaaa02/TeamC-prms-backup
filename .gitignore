@@ -43,3 +43,4 @@ prms-backend/data/*.csv
 
 # Misc
 bcrypt_whl_file.whl
+/.vs
