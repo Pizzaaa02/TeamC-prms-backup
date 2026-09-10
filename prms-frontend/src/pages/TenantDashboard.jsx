@@ -6,85 +6,59 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock,
-  Download,
   Heart,
   Home,
-  Loader,
   Minus,
-  Search,
-  SlidersHorizontal,
   WalletCards,
   Wrench,
 } from 'lucide-react'
 import './TenantDashboard.css'
+import { bookingApi } from '../api/booking'
+import { maintenanceApi } from '../api/maintenance'
+import { paymentApi } from '../api/payment'
+import { favoritesApi } from '../api/favorites'
 
 function TenantDashboard() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
+  const [rentals, setRentals] = useState([])
+  const [savedProperties, setSavedProperties] = useState([])
+  const [payments, setPayments] = useState([])
+  const [maintenance, setMaintenance] = useState([])
 
   useEffect(() => {
     localStorage.setItem('prmsDashboardPath', '/tenant')
-    const t = setTimeout(() => setLoading(false), 600)
-    return () => clearTimeout(t)
+    Promise.all([
+      bookingApi.myBookings({ limit: 100 }), favoritesApi.getMyFavorites(),
+      paymentApi.list({ limit: 100 }), maintenanceApi.mine(),
+    ]).then(([bookingRes, favoriteRes, paymentRes, maintenanceRes]) => {
+      const bookings = bookingRes.data?.data || []
+      setRentals(bookings.filter((item) => ['CONFIRMED', 'CHECKED_IN'].includes(item.status)).map((item) => ({
+        id: item.id, name: item.property?.title || 'Property', location: [item.property?.city, item.property?.state].filter(Boolean).join(', '),
+      })))
+      setSavedProperties((favoriteRes.data?.data || []).map((item) => ({
+        id: item.id, propertyId: item.property?.id || item.property?._id, name: item.property?.title || 'Property', location: [item.property?.city, item.property?.state].filter(Boolean).join(', '),
+        price: new Intl.NumberFormat('ms-MY', { style: 'currency', currency: 'MYR' }).format(item.property?.rent || 0) + ' / month',
+        image: item.property?.images?.[0]?.url || '',
+      })))
+      setPayments((paymentRes.data?.data || []).map((item) => ({
+        id: item.id, title: item.booking?.property?.title || item.type || 'Rental payment',
+        date: new Date(item.due_date).toLocaleDateString('en-MY'), amount: new Intl.NumberFormat('ms-MY', { style: 'currency', currency: 'MYR' }).format(item.amount),
+        numericAmount: item.amount, dueDate: item.due_date, status: item.status,
+      })))
+      setMaintenance((maintenanceRes.data?.data || []).map((item) => ({
+        id: item.id, title: item.title, desc: item.description, status: item.status.replaceAll('_', ' '), urgent: ['HIGH', 'URGENT'].includes(item.priority),
+      })))
+    }).finally(() => setLoading(false))
   }, [])
 
-  const rentals = [
-    {
-      name: 'Skyline Tower, Unit 402',
-      location: 'Kuala Lumpur',
-    },
-    {
-      name: 'Green Valley Villas, No. 12',
-      location: 'Johor Bahru',
-    },
-  ]
+  const nextPayment = payments.filter((item) => item.status === 'PENDING').sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))[0]
 
-  const savedProperties = [
-    {
-      name: 'The Grand Atrium',
-      location: 'Bukit Bintang, Kuala Lumpur',
-      price: 'RM 4,800 / month',
-      image:
-        'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1200&auto=format&fit=crop',
-    },
-    {
-      name: 'Azure Heights',
-      location: 'Mont Kiara, Kuala Lumpur',
-      price: 'RM 3,600 / month',
-      image:
-        'https://images.unsplash.com/photo-1497366754035-f200968a6e72?q=80&w=1200&auto=format&fit=crop',
-    },
-  ]
-
-  const payments = [
-    {
-      title: 'Rental Payment',
-      date: 'October 1st, 2023',
-      amount: 'RM 2,500',
-      status: 'Due Soon',
-    },
-    {
-      title: 'Maintenance Deposit',
-      date: 'September 15th, 2023',
-      amount: 'RM 350',
-      status: 'Paid',
-    },
-  ]
-
-  const maintenance = [
-    {
-      title: 'Air-conditioning Service',
-      desc: 'Technician scheduled for tomorrow at 10:00 AM.',
-      status: 'In Progress',
-      urgent: true,
-    },
-    {
-      title: 'Water Pressure Issue',
-      desc: 'Landlord has approved inspection request.',
-      status: 'Approved',
-      urgent: false,
-    },
-  ]
+  async function removeSavedProperty(property) {
+    if (!property.propertyId) return
+    await favoritesApi.removeFavorite({ propertyId: property.propertyId })
+    setSavedProperties((current) => current.filter((item) => item.id !== property.id))
+  }
 
   /* ---- KPI Card helper ---- */
   function KpiCard({ icon: Icon, iconBg, label, value, sublabel, trend, trendDir }) {
@@ -130,11 +104,11 @@ function TenantDashboard() {
         </div>
 
         <div className="landlord-page-actions">
-          <button type="button" className="btn-outline">
+          <button type="button" className="btn-outline" onClick={() => navigate(ROUTES.tenant.maintenance)}>
             <Wrench size={18} />
             Requests
           </button>
-          <button type="button" className="btn-primary-solid">
+          <button type="button" className="btn-primary-solid" onClick={() => navigate(ROUTES.tenant.payments)}>
             <WalletCards size={18} />
             Pay Now
           </button>
@@ -160,9 +134,9 @@ function TenantDashboard() {
               icon={WalletCards}
               iconBg="icon-purple"
               label="Next Payment Due"
-              value="RM 2,500"
-              sublabel="In 3 Days · October 1st, 2023"
-              trend="Due soon"
+              value={nextPayment?.amount || 'RM 0.00'}
+              sublabel={nextPayment ? `Due ${nextPayment.date}` : 'No pending payment'}
+              trend={nextPayment ? 'Due soon' : 'Up to date'}
               trendDir="neutral"
             />
 
@@ -171,9 +145,9 @@ function TenantDashboard() {
               icon={Home}
               iconBg="icon-blue"
               label="Active Rentals"
-              value="2"
-              sublabel="Across 2 locations"
-              trend="Both active"
+              value={String(rentals.length)}
+              sublabel={`Across ${new Set(rentals.map((item) => item.location)).size} locations`}
+              trend={rentals.length ? 'Active' : 'No active lease'}
               trendDir="up"
             />
 
@@ -182,8 +156,8 @@ function TenantDashboard() {
               icon={Wrench}
               iconBg="icon-rose"
               label="Maintenance"
-              value="2 Open"
-              sublabel="1 scheduled tomorrow"
+              value={`${maintenance.filter((item) => !['RESOLVED', 'CLOSED'].includes(item.status)).length} Open`}
+              sublabel={`${maintenance.length} total requests`}
               trend="In progress"
               trendDir="neutral"
             />
@@ -201,7 +175,7 @@ function TenantDashboard() {
           <button
             type="button"
             className="btn-outline-sm"
-            onClick={() => navigate(ROUTES.tenant.properties)}
+            onClick={() => navigate(ROUTES.tenant.bookings)}
           >
             View All
           </button>
@@ -209,7 +183,7 @@ function TenantDashboard() {
 
         <div className="tenant-rental-list">
           {rentals.map((rental) => (
-            <div className="tenant-rental-item" key={rental.name}>
+            <div className="tenant-rental-item" key={rental.id}>
               <div className="tenant-rental-dot" />
               <div>
                 <strong>{rental.name}</strong>
@@ -218,6 +192,7 @@ function TenantDashboard() {
               <span className="status-badge active">Active</span>
             </div>
           ))}
+          {!rentals.length && <p className="panel-subtitle">No active rentals.</p>}
         </div>
       </section>
 
@@ -239,10 +214,10 @@ function TenantDashboard() {
 
         <div className="saved-grid">
           {savedProperties.map((property) => (
-            <article className="saved-card" key={property.name}>
-              <img src={property.image} alt={property.name} />
+            <article className="saved-card" key={property.id} onClick={() => property.propertyId && navigate(`/tenant/properties/${property.propertyId}`)}>
+              {property.image ? <img src={property.image} alt={property.name} /> : <div className="saved-image-placeholder"><Home size={42} /></div>}
 
-              <button type="button" className="heart-btn">
+              <button type="button" className="heart-btn" aria-label={`Remove ${property.name} from saved properties`} onClick={(event) => { event.stopPropagation(); removeSavedProperty(property) }}>
                 <Heart size={24} fill="currentColor" />
               </button>
 
@@ -253,6 +228,7 @@ function TenantDashboard() {
               </div>
             </article>
           ))}
+          {!savedProperties.length && <p className="panel-subtitle">No saved properties yet.</p>}
         </div>
       </section>
 
@@ -276,7 +252,7 @@ function TenantDashboard() {
 
           <div className="payment-list">
             {payments.map((payment) => (
-              <div className="payment-item" key={payment.title}>
+              <div className="payment-item" key={payment.id}>
                 <div className="payment-icon-sm">
                   <WalletCards size={22} />
                 </div>
@@ -293,12 +269,12 @@ function TenantDashboard() {
                   <strong>{payment.amount}</strong>
                   <span
                     className={
-                      payment.status === 'Paid'
+                      payment.status === 'PAID'
                         ? 'status-badge paid'
                         : 'status-badge pending'
                     }
                   >
-                    {payment.status === 'Paid' ? (
+                    {payment.status === 'PAID' ? (
                       <CheckCircle2 size={12} />
                     ) : (
                       <Clock size={12} />
@@ -308,6 +284,7 @@ function TenantDashboard() {
                 </div>
               </div>
             ))}
+            {!payments.length && <p className="panel-subtitle">No payment activity.</p>}
           </div>
         </div>
 
@@ -330,7 +307,7 @@ function TenantDashboard() {
 
           <div className="maintenance-list">
             {maintenance.map((req) => (
-              <div className="maintenance-item" key={req.title}>
+              <div className="maintenance-item" key={req.id}>
                 <div className={`maintenance-icon ${req.urgent ? 'urgent' : 'soft'}`}>
                   <Wrench size={22} />
                 </div>
@@ -349,6 +326,7 @@ function TenantDashboard() {
                 </div>
               </div>
             ))}
+            {!maintenance.length && <p className="panel-subtitle">No maintenance requests.</p>}
           </div>
         </div>
       </section>

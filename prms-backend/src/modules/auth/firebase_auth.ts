@@ -1,10 +1,10 @@
-import { initializeApp, cert, getApps, App } from 'firebase-admin/app';
+import { initializeApp, cert, applicationDefault, getApps, App } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { env } from '../../config';
 
 let initializedApp: App | null = null;
 
-function getFirebaseApp(): App {
+export function getFirebaseApp(): App {
   if (!env.ENABLE_FIREBASE_VERIFY) {
     throw new Error('Firebase verification disabled');
   }
@@ -13,21 +13,18 @@ function getFirebaseApp(): App {
     return initializedApp;
   }
 
-  if (!env.GCP_SA_KEY) {
-    throw new Error(
-      'GCP_SA_KEY is required when ENABLE_FIREBASE_VERIFY=true'
-    );
-  }
-
   if (getApps().length > 0) {
     initializedApp = getApps()[0];
     return initializedApp;
   }
 
+  if (!env.GCP_SA_KEY && !env.GOOGLE_APPLICATION_CREDENTIALS) {
+    throw new Error('Google sign-in requires a backend Firebase service account. Configure GCP_SA_KEY or GOOGLE_APPLICATION_CREDENTIALS.');
+  }
+
   initializedApp = initializeApp({
-    credential: cert(
-      JSON.parse(env.GCP_SA_KEY)
-    ),
+    credential: env.GCP_SA_KEY ? cert(JSON.parse(env.GCP_SA_KEY)) : applicationDefault(),
+    projectId: env.FIREBASE_PROJECT_ID,
   });
 
   return initializedApp;
@@ -35,11 +32,15 @@ function getFirebaseApp(): App {
 
 export async function verifyFirebaseToken(
   token: string
-): Promise<string> {
+): Promise<{ uid: string; email: string; name?: string }> {
   const app = getFirebaseApp();
 
   const decodedToken =
-    await getAuth(app).verifyIdToken(token);
+    await getAuth(app).verifyIdToken(token, true);
 
-  return decodedToken.uid;
+  if (!decodedToken.email || !decodedToken.email_verified ||
+      decodedToken.firebase.sign_in_provider !== 'google.com') {
+    throw new Error('A verified Google account is required');
+  }
+  return { uid: decodedToken.uid, email: decodedToken.email.toLowerCase(), name: decodedToken.name };
 }

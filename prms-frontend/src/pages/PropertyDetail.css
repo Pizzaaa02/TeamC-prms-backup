@@ -2,8 +2,8 @@
 
 .property-detail-page {
   min-height: 100vh;
-  background: #f8f9fb;
-  color: #1a1a1a;
+  background: var(--background-color, #f8f9fb);
+  color: var(--text-color, #1a1a1a);
   font-family: var(--font-family, Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
 }
 
@@ -11,8 +11,8 @@
 .pd-topbar {
   height: 56px;
   padding: 0 32px;
-  background: #fff;
-  border-bottom: 1px solid var(--border-subtle, #e5e7eb);
+  background: var(--surface, #fff);
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -58,7 +58,7 @@
 
 .pd-icon-btn {
   background: transparent;
-  border: 1px solid var(--border-subtle, #e5e7eb);
+  border: 1px solid var(--border-color, #e5e7eb);
   border-radius: 20px;
   padding: 6px 10px;
   cursor: pointer;
@@ -92,7 +92,7 @@
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: #94a3b8;
+  color: var(--text-secondary, #94a3b8);
   padding: 16px 0 8px;
 }
 
@@ -117,7 +117,7 @@
 .pd-title {
   font-size: 26px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--text-color, #1a1a1a);
   margin: 0 0 8px;
   font-family: var(--headline-font, Georgia, serif);
 }
@@ -145,7 +145,7 @@
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 32px;
-  background: #f3f4f6;
+  background: var(--surface-container, #f3f4f6);
   height: 400px;
 }
 
@@ -239,7 +239,7 @@
 /* ── Divider ── */
 .pd-divider {
   height: 1px;
-  background: var(--border-subtle, #e5e7eb);
+  background: var(--border-color, #e5e7eb);
   margin: 28px 0;
 }
 
@@ -289,7 +289,7 @@
   align-items: center;
   gap: 6px;
   background: transparent;
-  border: 1px solid var(--border-subtle, #e5e7eb);
+  border: 1px solid var(--border-color, #e5e7eb);
   border-radius: 8px;
   padding: 8px 14px;
   font-size: 14px;
@@ -403,7 +403,7 @@
   padding: 10px 28px;
   border: 1px solid var(--text-color, #1a1a1a);
   border-radius: 8px;
-  background: #fff;
+  background: var(--surface, #fff);
   color: var(--text-color, #1a1a1a);
   font-size: 14px;
   font-weight: 600;
@@ -444,7 +444,7 @@
 .pd-map {
   border-radius: 8px;
   overflow: hidden;
-  background: var(--surface-2, #f1f5f9);
+  background: var(--surface-container, #f1f5f9);
 }
 
 .pd-map-location {
@@ -461,7 +461,7 @@
 .pd-map-placeholder {
   height: 300px;
   border-radius: 8px;
-  background: #f3f4f6;
+  background: var(--surface-container, #f3f4f6);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -516,8 +516,8 @@
 .booking-card {
   position: sticky;
   top: 88px;
-  background: #fff;
-  border: 1px solid var(--border-subtle, #e5e7eb);
+  background: var(--surface, #fff);
+  border: 1px solid var(--border-color, #e5e7eb);
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
@@ -549,7 +549,7 @@
 
 /* Inputs */
 .booking-inputs {
-  border: 1px solid var(--border-subtle, #d1d5db);
+  border: 1px solid var(--border-color, #d1d5db);
   border-radius: 8px;
   overflow: hidden;
   margin-bottom: 16px;
@@ -565,7 +565,7 @@
 }
 
 .booking-input-row .booking-input-col:first-child {
-  border-right: 1px solid var(--border-subtle, #e5e7eb);
+  border-right: 1px solid var(--border-color, #e5e7eb);
 }
 
 .booking-input-label {
@@ -640,7 +640,7 @@
   font-weight: 700;
   padding-top: 12px;
   margin-top: 8px;
-  border-top: 1px solid var(--border-subtle, #e5e7eb);
+  border-top: 1px solid var(--border-color, #e5e7eb);
 }
 
 /* Message Owner */
@@ -668,8 +668,8 @@
 /* ── Mini Calendar in Booking Card ── */
 .booking-minical {
   padding: 12px 0;
-  border-top: 1px solid var(--border-subtle, #e5e7eb);
-  border-bottom: 1px solid var(--border-subtle, #e5e7eb);
+  border-top: 1px solid var(--border-color, #e5e7eb);
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
   margin: 8px 0;
 }
 
@@ -745,7 +745,7 @@
 }
 
 .cal-selected {
-  background: var(--text-color, #1a1a1a);
+  background: var(--primary-color, #1a1a1a);
   color: #fff;
 }
 
@@ -793,8 +793,8 @@
 
 /* ── Footer ── */
 .pd-footer {
-  background: #f3f4f6;
-  border-top: 1px solid var(--border-subtle, #e5e7eb);
+  background: var(--surface-container, #f3f4f6);
+  border-top: 1px solid var(--border-color, #e5e7eb);
   padding: 40px 48px 24px;
 }
 
@@ -840,10 +840,12 @@
 .pd-footer-newsletter input {
   flex: 1;
   padding: 8px 12px;
-  border: 1px solid var(--border-subtle, #d1d5db);
+  border: 1px solid var(--border-color, #d1d5db);
   border-radius: 6px;
   font-size: 13px;
   outline: none;
+  background: var(--surface, #fff);
+  color: var(--text-color, #1a1a1a);
 }
 
 .pd-footer-newsletter button {
@@ -857,11 +859,24 @@
   cursor: pointer;
 }
 
+.pd-footer-newsletter-msg {
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+
+.pd-footer-newsletter-msg--success {
+  color: var(--success-state, #16a34a);
+}
+
+.pd-footer-newsletter-msg--error {
+  color: var(--error-state, #ef4444);
+}
+
 .pd-footer-bottom {
   max-width: 1120px;
   margin: 32px auto 0;
   padding-top: 20px;
-  border-top: 1px solid var(--border-subtle, #e5e7eb);
+  border-top: 1px solid var(--border-color, #e5e7eb);
   display: flex;
   justify-content: space-between;
   font-size: 12px;

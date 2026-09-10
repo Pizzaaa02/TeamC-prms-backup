@@ -5,6 +5,7 @@ import * as propertyService from './service_property';
 import { successResponse, paginatedResponse } from '../../utils/response';
 import { recordAudit } from '../admin/service_audit';
 import { prisma } from '../../db';
+import { clearCache } from '../../middleware/responseCache';
 
 const HELPERS = (req: Request) => {
   const ip = (req as any).ip || req.socket.remoteAddress || '';
@@ -23,7 +24,9 @@ export class PropertyController {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
-      const { properties, total } = await propertyService.getAllProperties(page, limit);
+      const type = typeof req.query.type === 'string' ? req.query.type : undefined;
+      const search = typeof req.query.search === 'string' ? req.query.search : undefined;
+      const { properties, total } = await propertyService.getAllProperties(page, limit, { type, search });
       HELPERS(req).log({ action: 'VIEW_PROPERTIES', entity: 'Property', description: `Listed properties (page ${page})` });
       res.json(paginatedResponse(properties, page, limit, total));
     } catch (error: any) { HELPERS(req).log({ action: 'VIEW_PROPERTIES', entity: 'Property', status: 'Failed', level: 'error', errorMessage: error.message }); res.status(500).json({ success: false, error: { message: error.message } }); }
@@ -43,6 +46,7 @@ export class PropertyController {
     if (!errors.isEmpty()) return res.status(400).json({ success: false, error: { message: errors.array()[0].msg } });
     try {
       const property = await propertyService.createProperty(req.body, req.user!.id);
+      clearCache('^/properties');
       HELPERS(req).log({ action: 'CREATE_PROPERTY', entity: 'Property', entityId: property?.id, description: `Created property ${property?.title}` });
       res.status(201).json(successResponse(property, 'Property created'));
     } catch (error: any) { HELPERS(req).log({ action: 'CREATE_PROPERTY', entity: 'Property', status: 'Failed', level: 'error', errorMessage: error.message }); res.status(400).json({ success: false, error: { message: error.message } }); }
@@ -51,6 +55,7 @@ export class PropertyController {
   update = async (req: AuthRequest, res: Response) => {
     try {
       const property = await propertyService.updateProperty(String(req.params.id), req.body);
+      clearCache('^/properties');
       HELPERS(req).log({ action: 'UPDATE_PROPERTY', entity: 'Property', entityId: property?.id, description: `Updated property ${property?.title || req.params.id}` });
       res.json(successResponse(property, 'Property updated'));
     } catch (error: any) { HELPERS(req).log({ action: 'UPDATE_PROPERTY', entity: 'Property', status: 'Failed', level: 'error', errorMessage: error.message }); res.status(400).json({ success: false, error: { message: error.message } }); }
@@ -60,6 +65,7 @@ export class PropertyController {
     try {
       const prop = await propertyService.getPropertyById(String(req.params.id));
       await propertyService.deactivateProperty(String(req.params.id));
+      clearCache('^/properties');
       HELPERS(req).log({ action: 'DEACTIVATE_PROPERTY', entity: 'Property', entityId: prop?.id, description: `Deactivated property ${prop?.title || prop?.id}` });
       res.json(successResponse(null, 'Property deactivated'));
     } catch (error: any) { HELPERS(req).log({ action: 'DEACTIVATE_PROPERTY', entity: 'Property', status: 'Failed', level: 'error', errorMessage: error.message }); res.status(400).json({ success: false, error: { message: error.message } }); }
@@ -71,6 +77,7 @@ export class PropertyController {
       if (!file) return res.status(400).json({ success: false, error: { message: 'No image file provided' } });
       const url = `/uploads/properties/${file.filename}`;
       const image = await propertyService.addImage(String(req.params.id), url);
+      clearCache('^/properties');
       HELPERS(req).log({ action: 'ADD_PROPERTY_IMAGE', entity: 'Property', entityId: String(req.params.id), description: `Added image to property` });
       res.status(201).json(successResponse(image));
     } catch (error: any) { HELPERS(req).log({ action: 'ADD_PROPERTY_IMAGE', entity: 'Property', status: 'Failed', level: 'error', errorMessage: error.message }); res.status(400).json({ success: false, error: { message: error.message } }); }
@@ -86,6 +93,7 @@ export class PropertyController {
         const filePath = path.join(__dirname, '..', '..', '..', 'uploads', 'properties', image.url.replace(/^\/uploads\/properties\//, ''));
         fs.promises.unlink(filePath).catch(() => {});
       }
+      clearCache('^/properties');
       HELPERS(req).log({ action: 'DELETE_PROPERTY_IMAGE', entity: 'PropertyImage', entityId: String(req.params.imageId), description: `Deleted property image` });
       res.json(successResponse(null, 'Image deleted'));
     } catch (error: any) { HELPERS(req).log({ action: 'DELETE_PROPERTY_IMAGE', entity: 'PropertyImage', status: 'Failed', level: 'error', errorMessage: error.message }); res.status(400).json({ success: false, error: { message: error.message } }); }
@@ -118,6 +126,7 @@ export class PropertyController {
         where: { id: image.id },
         data: { type: 'video' },
       });
+      clearCache('^/properties');
       HELPERS(req).log({ action: 'ADD_PROPERTY_VIDEO', entity: 'Property', entityId: String(req.params.id), description: `Added video to property` });
       res.status(201).json(successResponse(image));
     } catch (error: any) { HELPERS(req).log({ action: 'ADD_PROPERTY_VIDEO', entity: 'Property', status: 'Failed', level: 'error', errorMessage: error.message }); res.status(400).json({ success: false, error: { message: error.message } }); }
@@ -136,6 +145,7 @@ export class PropertyController {
         const filePath = path.join(__dirname, '..', '..', '..', 'uploads', 'properties', urlToRemove.replace(/^\/uploads\/properties\//, ''));
         fs.promises.unlink(filePath).catch(() => {});
       }
+      clearCache('^/properties');
       HELPERS(req).log({ action: 'DELETE_PROPERTY_VIDEO', entity: 'Property', entityId: String(req.params.id), description: `Removed video from property` });
       res.json(successResponse(prop, 'Video deleted'));
     } catch (error: any) { HELPERS(req).log({ action: 'DELETE_PROPERTY_VIDEO', entity: 'Property', status: 'Failed', level: 'error', errorMessage: error.message }); res.status(400).json({ success: false, error: { message: error.message } }); }
@@ -155,6 +165,7 @@ export class PropertyController {
           documentName: file.originalname,
         },
       });
+      clearCache('^/properties');
       HELPERS(req).log({ action: 'ADD_PROPERTY_DOCUMENT', entity: 'Property', entityId: String(req.params.id), description: `Added document to property` });
       res.status(201).json(successResponse(image));
     } catch (error: any) { HELPERS(req).log({ action: 'ADD_PROPERTY_DOCUMENT', entity: 'Property', status: 'Failed', level: 'error', errorMessage: error.message }); res.status(400).json({ success: false, error: { message: error.message } }); }
@@ -173,6 +184,7 @@ export class PropertyController {
         const filePath = path.join(__dirname, '..', '..', '..', 'uploads', 'properties', urlToRemove.replace(/^\/uploads\/properties\//, ''));
         fs.promises.unlink(filePath).catch(() => {});
       }
+      clearCache('^/properties');
       HELPERS(req).log({ action: 'DELETE_PROPERTY_DOCUMENT', entity: 'Property', entityId: String(req.params.id), description: `Removed document from property` });
       res.json(successResponse(prop, 'Document deleted'));
     } catch (error: any) { HELPERS(req).log({ action: 'DELETE_PROPERTY_DOCUMENT', entity: 'Property', status: 'Failed', level: 'error', errorMessage: error.message }); res.status(400).json({ success: false, error: { message: error.message } }); }

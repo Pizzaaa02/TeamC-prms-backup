@@ -21,6 +21,12 @@
   margin: 0;
 }
 
+/* Match the standard 28px Admin page-title size (this page is shared with Landlord,
+   so the base rule above is left alone and only overridden inside the Admin layout). */
+.admin-layout-content .finance-header h1 {
+  font-size: 28px;
+}
+
 .finance-export-btn {
   display: inline-flex;
   align-items: center;
@@ -228,7 +234,7 @@
   background: var(--surface-container);
 }
 
-.status-badge {
+.payment-status-badge {
   display: inline-block;
   padding: 2px var(--spacing-sm);
   border-radius: var(--radius-xs, 4px);
@@ -237,22 +243,22 @@
   text-transform: uppercase;
 }
 
-.status-badge.paid {
+.payment-status-badge.paid {
   background: var(--success-fixed);
   color: var(--success-label);
 }
 
-.status-badge.pending {
+.payment-status-badge.pending {
   background: var(--warning-state);
   color: var(--warning-label);
 }
 
-.status-badge.overdue {
+.payment-status-badge.overdue {
   background: var(--error-state);
   color: var(--error-label);
 }
 
-.status-badge.cancelled {
+.payment-status-badge.cancelled {
   background: var(--page-bg);
   color: var(--on-surface);
 }

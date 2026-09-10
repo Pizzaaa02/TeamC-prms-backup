@@ -1,10 +1,11 @@
 import bcrypt from 'bcryptjs';
+import { createHash, randomUUID } from 'node:crypto';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '../../db';
 import { env } from '../../config';
 
-export async function registerUser(email: string, password: string, full_name?: string, phone?: string, role?: string) {
+export async function registerUser(email: string, password: string, full_name?: string, phone?: string, role?: string, privacyConsent = false, marketingConsent = false) {
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) throw new Error('Email already registered');
 
@@ -31,6 +32,11 @@ export async function registerUser(email: string, password: string, full_name?: 
     include: { UserRole: { include: { role: true } } },
   });
 
+  await prisma.privacyConsent.createMany({ data: [
+    { userId: user.id, purpose: 'essential_service', granted: privacyConsent, noticeVersion: '2026-09-03', source: 'registration' },
+    { userId: user.id, purpose: 'direct_marketing', granted: marketingConsent, noticeVersion: '2026-09-03', source: 'registration' },
+  ] });
+
   return user;
 }
 
@@ -52,19 +58,21 @@ export async function loginUser(email: string, password: string) {
 
 export function generateTokens(userId: string) {
   const accessToken = jwt.sign({ userId }, env.JWT_SECRET, { expiresIn: env.JWT_EXPIRY } as jwt.SignOptions);
-  const refreshToken = jwt.sign({ userId }, env.JWT_REFRESH_SECRET, { expiresIn: env.JWT_REFRESH_EXPIRY } as jwt.SignOptions);
+  const refreshToken = jwt.sign({ userId }, env.JWT_REFRESH_SECRET, { expiresIn: env.JWT_REFRESH_EXPIRY, jwtid: randomUUID() } as jwt.SignOptions);
   return { accessToken, refreshToken };
 }
 
 export async function saveRefreshToken(userId: string, refreshToken: string) {
-  const hash = await bcrypt.hash(refreshToken, 10);
+  // JWTs exceed bcrypt's 72-byte limit. Hash the entire token before bcrypt.
+  const hash = await bcrypt.hash(createHash('sha256').update(refreshToken).digest('hex'), 10);
   await prisma.user.update({ where: { id: userId }, data: { refreshToken: hash } });
 }
 
 export async function verifyRefreshToken(userId: string, refreshToken: string) {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user || !user.refreshToken) throw new Error('No refresh token found');
-  const valid = await bcrypt.compare(refreshToken, user.refreshToken);
+  if (!user.is_active) throw new Error('Account is suspended');
+  const valid = await bcrypt.compare(createHash('sha256').update(refreshToken).digest('hex'), user.refreshToken);
   if (!valid) throw new Error('Invalid refresh token');
   return user;
 }
@@ -96,11 +104,12 @@ export async function updateUserProfile(
     }
     const role = await prisma.role.findUnique({ where: { name: data.role } });
     if (!role) throw new Error(`Role ${data.role} not found`);
-    await prisma.userRole.upsert({
-      where: { userId_roleId: { userId, roleId: role.id } },
-      update: {},
-      create: { userId, roleId: role.id },
-    });
+    // The application exposes one active role. Adding a second association
+    // leaves the default Tenant role first, so onboarding never takes effect.
+    await prisma.$transaction([
+      prisma.userRole.deleteMany({ where: { userId } }),
+      prisma.userRole.create({ data: { userId, roleId: role.id } }),
+    ]);
   }
 
   const { role, ...userFields } = data;

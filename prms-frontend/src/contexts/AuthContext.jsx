@@ -67,10 +67,10 @@ function AuthProvider({ children }) {
 
   const register = useCallback(
     async (data, navigate) => {
-      dispatch({ type: ACTIONS.SET_LOADING, payload: true });
       dispatch({ type: ACTIONS.CLEAR_ERROR });
       try {
         await authApi.register(data);
+        dispatch({ type: ACTIONS.SET_LOADING, payload: false });
         // After successful register, redirect to login page so user can authenticate
         // Then the login function will redirect to the proper dashboard based on role
         if (navigate) navigate(ROUTES.public.login);
@@ -140,6 +140,8 @@ function AuthProvider({ children }) {
 
         // Issue #3: isNewUser flag from backend
         const isNewUser = !!data?.data?.isNewUser;
+        if (isNewUser) localStorage.setItem('prmsOnboarding', 'true');
+        else localStorage.removeItem('prmsOnboarding');
 
         // Fetch current user with normalized shape
         const { data: meData } = await authApi.getMe();
@@ -150,7 +152,6 @@ function AuthProvider({ children }) {
         if (navigate && user) {
           // Issue #3: New Google users go to role-selection for onboarding
           if (isNewUser) {
-            localStorage.setItem('prmsOnboarding', 'true');
             navigate('/role-selection');
           } else {
             const path = roleToPath(user.role);
@@ -193,8 +194,11 @@ function AuthProvider({ children }) {
 
   const updateProfile = useCallback(async (data) => {
     try {
-      const { data: res } = await authApi.updateMe(data);
-      const updated = normalizeUser(res);
+      await authApi.updateMe(data);
+      // Profile updates return nested UserRole records; /me supplies the
+      // canonical flat role used by navigation and route protection.
+      const { data: meData } = await authApi.getMe();
+      const updated = normalizeUser(meData);
       dispatch({ type: ACTIONS.SET_USER, payload: updated });
       return { success: true, user: updated };
     } catch (err) {

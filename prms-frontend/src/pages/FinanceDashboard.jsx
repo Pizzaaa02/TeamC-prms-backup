@@ -44,6 +44,29 @@ function FinanceDashboard() {
     ? payments.filter((p) => p.status === statusFilter)
     : payments;
 
+  function exportCsv() {
+    const header = 'Date,Reference,Amount,Status,Method';
+    const rows = filtered.map((p) =>
+      [
+        p.paid_at || p.due_date || '',
+        p.reference || '',
+        Number(p.amount || 0),
+        p.status || '',
+        p.method || '',
+      ]
+        .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+        .join(',')
+    );
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'payments.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   if (loading) return <div className="finance-loading">Loading finance data...</div>;
 
   return (
@@ -51,7 +74,7 @@ function FinanceDashboard() {
       {error && <div className="alert alert-danger">{error} <button className="btn btn-sm" onClick={load}>Retry</button></div>}
       <div className="finance-header">
         <h1>Finance Overview</h1>
-        <button className="finance-export-btn" title="Export">
+        <button className="finance-export-btn" title="Export" onClick={exportCsv}>
           <Download size={16} /> Export
         </button>
       </div>
@@ -83,7 +106,7 @@ function FinanceDashboard() {
           </div>
           <div className="finance-card-info">
             <span className="finance-card-label">Pending</span>
-            <span className="finance-card-value">RM {(summary?.pending ?? 0).toFixed(2)}</span>
+            <span className="finance-card-value">RM {(summary?.pendingAmount ?? 0).toFixed(2)}</span>
           </div>
         </motion.div>
 
@@ -98,7 +121,7 @@ function FinanceDashboard() {
           </div>
           <div className="finance-card-info">
             <span className="finance-card-label">Collected</span>
-            <span className="finance-card-value">RM {(summary?.collected ?? 0).toFixed(2)}</span>
+            <span className="finance-card-value">RM {(summary?.collectedAmount ?? 0).toFixed(2)}</span>
           </div>
         </motion.div>
 
@@ -170,7 +193,7 @@ function FinanceDashboard() {
                   <td>{p.reference || '—'}</td>
                   <td>RM {Number(p.amount).toFixed(2)}</td>
                   <td>
-                    <span className={`status-badge ${p.status.toLowerCase()}`}>
+                    <span className={`payment-status-badge ${p.status.toLowerCase()}`}>
                       {p.status}
                     </span>
                   </td>

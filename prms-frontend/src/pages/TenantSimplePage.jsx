@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import {
   CalendarDays,
   CircleHelp,
@@ -95,10 +95,10 @@ const subPages = {
     title: 'Help Center',
     subtitle: 'Find tenant guides, support cases, and troubleshooting help.',
     icon: CircleHelp,
-    primaryBtn: 'Submit Ticket',
+    primaryBtn: null,
     cardKeys: ['cases', 'guides', 'sla', 'status'],
     cardLabels: ['Open Cases', 'Help Guides', 'Response SLA', 'System Status'],
-    columns: ['Topic', 'Category', 'Priority', 'Status', 'Action'],
+    columns: ['Topic', 'Category', 'Priority', 'Status'],
     renderRow: null,
   },
 }
@@ -112,6 +112,13 @@ export default function TenantSimplePage({ type = 'bookings' }) {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
+
+  const visibleRows = rows.filter((row) => {
+    if (!searchTerm.trim()) return true
+    const cells = cfg.renderRow ? cfg.renderRow(row) : row
+    return cells?.some((cell) => String(cell).toLowerCase().includes(searchTerm.trim().toLowerCase()))
+  })
 
   /* ---- Fetch real data when type or user changes ---- */
    
@@ -185,9 +192,9 @@ export default function TenantSimplePage({ type = 'bookings' }) {
             { label: 'System Status', value: 'Online' },
           ])
           setRows([
-            ['How to pay rent', 'Payments', 'Low', 'Available', 'Open'],
-            ['Booking cancellation guide', 'Bookings', 'Low', 'Available', 'Open'],
-            ['Maintenance request issue', 'Maintenance', 'Medium', 'Open', 'View'],
+            ['How to pay rent', 'Payments', 'Low', 'Available'],
+            ['Booking cancellation guide', 'Bookings', 'Low', 'Available'],
+            ['Maintenance request issue', 'Maintenance', 'Medium', 'Available'],
           ])
         }
       } catch (e) {
@@ -233,9 +240,11 @@ export default function TenantSimplePage({ type = 'bookings' }) {
           <h1>{cfg.title}</h1>
           <p>{cfg.subtitle}</p>
         </div>
-        <button type="button" className="tenant-simple-primary-btn" onClick={handlePrimaryBtn}>
-          {cfg.primaryBtn}
-        </button>
+        {cfg.primaryBtn && (
+          <button type="button" className="tenant-simple-primary-btn" onClick={handlePrimaryBtn}>
+            {cfg.primaryBtn}
+          </button>
+        )}
       </section>
 
       <section className="tenant-simple-cards">
@@ -255,7 +264,7 @@ export default function TenantSimplePage({ type = 'bookings' }) {
           <h2>{cfg.title}</h2>
           <div className="tenant-simple-search">
             <Search size={17} />
-            <input type="text" placeholder="Search records..." />
+            <input type="search" placeholder="Search records..." aria-label={`Search ${cfg.title.toLowerCase()}`} value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} />
           </div>
         </div>
 
@@ -276,15 +285,15 @@ export default function TenantSimplePage({ type = 'bookings' }) {
               ))}
             </div>
 
-            {rows.length === 0 && (
+            {visibleRows.length === 0 && (
               <div className="tenant-simple-table-row">
                 <div colSpan={cfg.columns.length} style={{ gridColumn: `1 / ${cfg.columns.length + 1}`, textAlign: 'center', padding: 20 }}>
-                  No records found
+                  {searchTerm ? 'No matching records found' : 'No records found'}
                 </div>
               </div>
             )}
 
-            {rows.map((row, i) => {
+            {visibleRows.map((row, i) => {
               const cells = cfg.renderRow ? cfg.renderRow(row, i) : row
               if (!cells) return null
               return (
@@ -295,7 +304,7 @@ export default function TenantSimplePage({ type = 'bookings' }) {
                 >
                   {cells.map((cell, ci) => (
                     <div key={`${String(ci)}-${row.id || i}`}>
-                      {ci === cells.length - 1 ? (
+                      {cfg.columns[ci] === 'Action' ? (
                         <button type="button">{cell}</button>
                       ) : (
                         <span>{cell}</span>

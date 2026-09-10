@@ -55,8 +55,8 @@ export class BookingController {
 
   confirm = async (req: Request, res: Response) => {
     try {
-      const booking = await bookingService.updateBooking(String(req.params.id), { status: 'CONFIRMED' });
-      HELPERS(req).log({ action: 'CONFIRM_BOOKING', entity: 'Booking', entityId: req.params.id, description: `Confirmed booking ${req.params.id}` });
+      const booking = await bookingService.confirmBooking(String(req.params.id));
+      HELPERS(req).log({ action: 'CONFIRM_BOOKING', entity: 'Booking', entityId: String(req.params.id), description: `Confirmed booking ${req.params.id}` });
       res.json(successResponse(booking, 'Booking confirmed'));
     } catch (error: any) { HELPERS(req).log({ action: 'CONFIRM_BOOKING', entity: 'Booking', status: 'Failed', level: 'error', errorMessage: error.message }); res.status(400).json({ success: false, error: { message: error.message } }); }
   };
@@ -64,7 +64,7 @@ export class BookingController {
   reject = async (req: Request, res: Response) => {
     try {
       const booking = await bookingService.updateBooking(String(req.params.id), { status: 'CANCELLED' });
-      HELPERS(req).log({ action: 'REJECT_BOOKING', entity: 'Booking', entityId: req.params.id, description: `Rejected booking ${req.params.id}` });
+      HELPERS(req).log({ action: 'REJECT_BOOKING', entity: 'Booking', entityId: String(req.params.id), description: `Rejected booking ${req.params.id}` });
       res.json(successResponse(booking, 'Booking rejected'));
     } catch (error: any) { HELPERS(req).log({ action: 'REJECT_BOOKING', entity: 'Booking', status: 'Failed', level: 'error', errorMessage: error.message }); res.status(400).json({ success: false, error: { message: error.message } }); }
   };
@@ -72,7 +72,7 @@ export class BookingController {
   cancel = async (req: Request, res: Response) => {
     try {
       await bookingService.cancelBooking(String(req.params.id));
-      HELPERS(req).log({ action: 'CANCEL_BOOKING', entity: 'Booking', entityId: req.params.id, description: `Cancelled booking ${req.params.id}` });
+      HELPERS(req).log({ action: 'CANCEL_BOOKING', entity: 'Booking', entityId: String(req.params.id), description: `Cancelled booking ${req.params.id}` });
       res.json(successResponse(null, 'Booking cancelled'));
     } catch (error: any) { HELPERS(req).log({ action: 'CANCEL_BOOKING', entity: 'Booking', status: 'Failed', level: 'error', errorMessage: error.message }); res.status(400).json({ success: false, error: { message: error.message } }); }
   };

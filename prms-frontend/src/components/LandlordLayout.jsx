@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useLocation, useNavigate, Outlet } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -21,6 +22,7 @@ function LandlordLayout() {
   const role = user?.role || 'Landlord'
   const navItems = buildNavItems(role)
   const activePage = resolveActivePage(location.pathname, role)
+  const [portfolioSearch, setPortfolioSearch] = useState('')
 
   function safeNavigate(path) {
     if (location.pathname !== path) navigate(path)
@@ -28,6 +30,12 @@ function LandlordLayout() {
 
   function handleLogout() {
     logout(navigate)
+  }
+
+  function handlePortfolioSearch(e) {
+    e.preventDefault()
+    const query = portfolioSearch.trim()
+    navigate(`/landlord/properties${query ? `?search=${encodeURIComponent(query)}` : ''}`)
   }
 
   return (
@@ -43,6 +51,8 @@ function LandlordLayout() {
               className={`landlord-layout-side-btn ${isActive ? 'active' : ''}`}
               onClick={() => safeNavigate(item.path)}
               title={item.label}
+              aria-label={item.label}
+              aria-current={isActive ? 'page' : undefined}
               whileTap={{ scale: 0.96 }}
             >
               <Icon size={25} />
@@ -58,6 +68,8 @@ function LandlordLayout() {
           className={`landlord-layout-side-btn ${activePage === 'help' ? 'active' : ''}`}
           onClick={() => safeNavigate('/landlord/help')}
           title="Help"
+          aria-label="Help"
+          aria-current={activePage === 'help' ? 'page' : undefined}
           whileTap={{ scale: 0.96 }}
         >
           <CircleHelp size={24} />
@@ -69,6 +81,7 @@ function LandlordLayout() {
           className="landlord-layout-side-btn logout"
           onClick={handleLogout}
           title="Logout"
+          aria-label="Log out"
           whileTap={{ scale: 0.96 }}
         >
           <LogOut size={24} />
@@ -78,16 +91,16 @@ function LandlordLayout() {
 
       <section className="landlord-layout-main" data-customize-id="global.content">
         <header className="landlord-layout-topbar" data-customize-id="global.header">
-          <div className="landlord-layout-brand" onClick={() => safeNavigate('/landlord')} data-customize-id="global.brand">
+          <button type="button" className="landlord-layout-brand" onClick={() => safeNavigate('/landlord')} data-customize-id="global.brand" aria-label="Go to Landlord dashboard">
             <h2 data-customize-id="global.brand.title">PRMS</h2>
             <span></span>
             <p data-customize-id="global.brand.subtitle">{role} Portal</p>
-          </div>
+          </button>
 
-          <div className="landlord-layout-search" data-customize-id="global.search">
+          <form className="landlord-layout-search" data-customize-id="global.search" onSubmit={handlePortfolioSearch} role="search">
             <Search size={22} />
-            <input type="text" placeholder="Search portfolios..." />
-          </div>
+            <input type="search" placeholder="Search your properties..." aria-label="Search your properties" value={portfolioSearch} onChange={(e) => setPortfolioSearch(e.target.value)} />
+          </form>
 
           <div className="landlord-layout-actions" data-customize-id="global.top-actions">
             <NotificationDropdown />

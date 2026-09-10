@@ -9,7 +9,7 @@ export function uploadFile(file, description = '') {
     formData.append('description', description);
   }
 
-  return client.axios.post('/users/files', formData, {
+  return client.post('/users/files', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   }).then(res => res.data)
     .catch(err => {
@@ -19,7 +19,7 @@ export function uploadFile(file, description = '') {
 }
 
 export function downloadFile(fileId) {
-  return client.axios.get(`/users/files/${fileId}/download`)
+  return client.get(`/users/files/${fileId}/download`)
     .then(res => res.data)
     .catch(err => {
       const msg = err.response?.data?.error?.message || err.message;
@@ -30,7 +30,7 @@ export function downloadFile(fileId) {
 export function listFiles(page = 1, limit = 10, category = undefined) {
   const params = { page, limit };
   if (category) params.category = category;
-  return client.axios.get('/users/files', { params })
+  return client.get('/users/files', { params })
     .then(res => res.data)
     .catch(err => {
       const msg = err.response?.data?.error?.message || err.message;
@@ -40,7 +40,7 @@ export function listFiles(page = 1, limit = 10, category = undefined) {
 
 export function getUserMedia(fileType) {
   const params = fileType ? { fileType } : {};
-  return client.axios.get('/users/my-media', { params })
+  return client.get('/users/my-media', { params })
     .then(res => res.data)
     .catch(err => {
       const msg = err.response?.data?.error?.message || err.message;
@@ -49,7 +49,7 @@ export function getUserMedia(fileType) {
 }
 
 export function getFile(fileId) {
-  return client.axios.get(`/users/files/${fileId}`)
+  return client.get(`/users/files/${fileId}`)
     .then(res => res.data)
     .catch(err => {
       const msg = err.response?.data?.error?.message || err.message;
@@ -58,7 +58,7 @@ export function getFile(fileId) {
 }
 
 export function deleteFile(fileId) {
-  return client.axios.delete(`/users/files/${fileId}`)
+  return client.delete(`/users/files/${fileId}`)
     .then(res => res.data)
     .catch(err => {
       const msg = err.response?.data?.error?.message || err.message;
@@ -67,7 +67,7 @@ export function deleteFile(fileId) {
 }
 
 export function deletePropertyImage(imageId) {
-  return client.axios.delete(`/users/my-media/images/${imageId}`)
+  return client.delete(`/users/my-media/images/${imageId}`)
     .then(res => res.data)
     .catch(err => {
       const msg = err.response?.data?.error?.message || err.message;
@@ -76,7 +76,7 @@ export function deletePropertyImage(imageId) {
 }
 
 export function getPublicUrl(fileId) {
-  return client.axios.get(`/users/files/${fileId}/public-url`)
+  return client.get(`/users/files/${fileId}/public-url`)
     .then(res => res.data)
     .catch(err => {
       const msg = err.response?.data?.error?.message || err.message;

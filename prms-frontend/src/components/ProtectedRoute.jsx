@@ -17,7 +17,8 @@ export function ProtectedRoute({ children, allowedRoles }) {
   }
 
   // Issue #11: Strengthen role-based route protection — case-insensitive matching
-  if (allowedRoles && allowedRoles.length > 0 && user?.role) {
+  if (allowedRoles && allowedRoles.length > 0) {
+    if (!user?.role) return <Navigate to="/login" replace />;
     const userRole = user.role.toLowerCase();
     const hasAccess = allowedRoles.some(
       (role) => role.toLowerCase() === userRole
@@ -45,5 +46,15 @@ export function PublicRoute({ children }) {
     return <Navigate to={path} replace />;
   }
 
+  return children;
+}
+
+/** Google users are already signed in when they choose their initial role. */
+export function RoleSelectionRoute({ children }) {
+  const { loading, isAuthenticated, user } = useAuth();
+  if (loading) return null;
+  if (isAuthenticated && localStorage.getItem('prmsOnboarding') !== 'true') {
+    return <Navigate to={roleToPath(user?.role)} replace />;
+  }
   return children;
 }

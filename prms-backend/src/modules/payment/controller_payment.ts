@@ -21,7 +21,8 @@ export class PaymentController {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
-      const { payments, total } = await paymentService.getPayments(page, limit);
+      const auth = req as AuthRequest;
+      const { payments, total } = await paymentService.getPayments(page, limit, auth.user!);
       HELPERS(req).log({ action: 'VIEW_PAYMENTS', entity: 'Payment', description: `Listed payments (page ${page})` });
       res.json(paginatedResponse(payments, page, limit, total));
     } catch (error: any) { HELPERS(req).log({ action: 'VIEW_PAYMENTS', entity: 'Payment', status: 'Failed', level: 'error', errorMessage: error.message }); res.status(500).json({ success: false, error: { message: error.message } }); }
@@ -31,6 +32,8 @@ export class PaymentController {
     try {
       const payment = await paymentService.getPaymentById(String(req.params.id));
       if (!payment) return res.status(404).json({ success: false, error: { message: 'Payment not found' } });
+      const auth = req as AuthRequest;
+      if (auth.user!.role === 'Tenant' && payment.userId !== auth.user!.id) return res.status(403).json({ success: false, error: { message: 'Access denied' } });
       HELPERS(req).log({ action: 'VIEW_PAYMENT', entity: 'Payment', entityId: payment.id, description: `Viewed payment` });
       res.json(successResponse(payment));
     } catch (error: any) { HELPERS(req).log({ action: 'VIEW_PAYMENT', entity: 'Payment', status: 'Failed', level: 'error', errorMessage: error.message }); res.status(500).json({ success: false, error: { message: error.message } }); }
@@ -47,9 +50,17 @@ export class PaymentController {
   markPaid = async (req: Request, res: Response) => {
     try {
       const payment = await paymentService.markAsPaid(String(req.params.id));
-      HELPERS(req).log({ action: 'MARK_PAYMENT_PAID', entity: 'Payment', entityId: req.params.id, description: `Payment marked as paid` });
+      HELPERS(req).log({ action: 'MARK_PAYMENT_PAID', entity: 'Payment', entityId: String(req.params.id), description: `Payment marked as paid` });
       res.json(successResponse(payment, 'Payment marked as paid'));
     } catch (error: any) { HELPERS(req).log({ action: 'MARK_PAYMENT_PAID', entity: 'Payment', status: 'Failed', level: 'error', errorMessage: error.message }); res.status(400).json({ success: false, error: { message: error.message } }); }
+  };
+
+  simulate = async (req: AuthRequest, res: Response) => {
+    try {
+      const payment = await paymentService.simulatePayment(String(req.params.id), req.user!.id);
+      HELPERS(req).log({ action: 'SIMULATE_PAYMENT', entity: 'Payment', entityId: payment.id, description: 'Completed sandbox payment' });
+      res.json(successResponse(payment, 'Sandbox payment successful'));
+    } catch (error: any) { res.status(error.message === 'Access denied' ? 403 : 400).json({ success: false, error: { message: error.message } }); }
   };
 
   summary = async (req: AuthRequest, res: Response) => {

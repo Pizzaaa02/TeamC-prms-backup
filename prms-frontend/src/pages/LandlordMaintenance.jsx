@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Modal from '../components/Modal';
 import { maintenanceApi } from '../api/maintenance';
 
-const STATUS_TABS = ['all', 'in_progress', 'resolved', 'closed'];
+const STATUS_TABS = ['all', 'open', 'in_progress', 'resolved', 'closed'];
 
 export default function LandlordMaintenance() {
   const [tab, setTab] = useState('all');
@@ -13,7 +13,7 @@ export default function LandlordMaintenance() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await maintenanceApi.list({ status: tab === 'all' ? undefined : tab, scope: 'my-properties' });
+      const res = await maintenanceApi.list({ status: tab === 'all' ? undefined : tab.toUpperCase() });
       setTickets(res.data?.data || []);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
@@ -23,7 +23,7 @@ export default function LandlordMaintenance() {
 
   const verify = async (id, approved) => {
     try {
-      await maintenanceApi.updateStatus(id, approved ? 'closed' : 'in_progress');
+      await maintenanceApi.updateStatus(id, approved ? 'CLOSED' : 'IN_PROGRESS');
       setSelected(null); load();
     } catch (e) { alert('Failed'); }
   };
@@ -32,7 +32,7 @@ export default function LandlordMaintenance() {
     const csv = [
       'ID,Title,Property,Tenant,Priority,Status,Created',
       ...tickets.map(t =>
-        `"${t._id || ''}","${t.title || ''}","${t.property?.title || ''}","${t.createdBy?.full_name || ''}","${t.priority || ''}","${t.status || ''}","${t.createdAt || ''}"`
+        `"${t.id || ''}","${t.title || ''}","${t.property?.title || ''}","${t.user?.full_name || ''}","${t.priority || ''}","${t.status || ''}","${t.created_at || ''}"`
       ),
     ].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -68,7 +68,7 @@ export default function LandlordMaintenance() {
                   <td>{t.property?.title || 'N/A'}</td>
                   <td><span className={`status-badge status-${t.priority}`}>{t.priority}</span></td>
                   <td><span className={`status-badge status-${(t.status||'').toLowerCase()}`}>{t.status}</span></td>
-                  <td>{t.assignedTo?.full_name ?? t.assignedTo?.name ?? '—'}</td>
+                  <td>{t.assignedTo || '—'}</td>
                   <td><button className="btn btn-sm btn-outline" onClick={() => setSelected(t)}>Detail</button></td>
                 </tr>
               ))}

@@ -1,11 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { authApi } from '../api/auth';
+import { WalletCards, Clock, CheckCircle2, AlertTriangle, Printer } from 'lucide-react';
 import { paymentApi } from '../api/payment';
-import { bookingApi } from '../api/booking';
-import { BarChart, PieChart } from '../components/Charts';
+import { apiClient } from '../api/ApiClient';
+import './AdminSimplePage.css';
 
 export default function AdminReports() {
-  const [period, setPeriod] = useState('month');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [report, setReport] = useState(null);
@@ -18,37 +17,58 @@ export default function AdminReports() {
       setReport(res.data?.data || {});
     } catch (e) {
       setError(e.message || 'Failed to load reports');
-      console.error(e);
+    } finally {
+      setLoading(false);
     }
-    finally { setLoading(false); }
-  }, [period]);
+  }, []);
 
   useEffect(() => { load(); }, [load]);
 
-  return (
-    <div className="page-shell">
-      <div className="page-header">
-        <h1 className="page-title">Reports</h1>
-        <button className="btn btn-primary" onClick={() => window.print()}>Print Report</button>
-      </div>
+  const cards = [
+    { icon: WalletCards, label: 'Revenue Collected', value: 'RM ' + (report?.total || 0).toLocaleString() },
+    { icon: Clock, label: 'Pending Payments', value: report?.pending ?? '...' },
+    { icon: CheckCircle2, label: 'Payments Collected', value: report?.collected ?? '...' },
+    { icon: AlertTriangle, label: 'Overdue Payments', value: report?.overdue ?? '...' },
+  ];
 
-      <div className="card-table">
-        {error && <div className="alert alert-danger mt-2">{error} <button className="btn btn-sm" onClick={load}>Retry</button></div>}
-        <p>{loading ? 'Generating report…' : 'Report ready.'}</p>
-        {report && (
-          <div className="report-content">
-            <div className="stats-grid">
-              <div className="stat-card">
-                <h4>Revenue</h4>
-                <span className="stat-value">${(report.total || 0).toFixed(2)}</span>
-              </div>
-              <div className="stat-card"><h4>Pending</h4><span className="stat-value">{report.pending || 0}</span></div>
-              <div className="stat-card"><h4>Collected</h4><span className="stat-value">{report.collected || 0}</span></div>
-              <div className="stat-card"><h4>Overdue</h4><span className="stat-value">{report.overdue || 0}</span></div>
+  const downloadCsv = async () => {
+    const response = await apiClient.get('/reports/export.csv', { responseType: 'blob' });
+    const url = URL.createObjectURL(response.data);
+    const link = document.createElement('a'); link.href = url; link.download = 'prms-revenue-report.csv'; link.click(); URL.revokeObjectURL(url);
+  };
+
+  return (
+    <>
+      <section className="admin-simple-hero">
+        <div>
+          <h1>Reports &amp; Audit</h1>
+          <p>Platform-wide revenue, payment activity, and financial health at a glance.</p>
+        </div>
+        <div><button type="button" className="admin-simple-primary-btn" onClick={downloadCsv}>Export CSV</button>{' '}
+        <button type="button" className="admin-simple-primary-btn" onClick={() => window.print()}>
+          <Printer size={18} style={{ marginRight: 8, verticalAlign: 'text-bottom' }} />
+          Print Report
+        </button></div>
+      </section>
+
+      {error && (
+        <div className="admin-error-banner" role="alert">
+          <span>{error}</span>
+          <button type="button" onClick={load}>Retry</button>
+        </div>
+      )}
+
+      <section className="admin-simple-cards">
+        {cards.map((card) => (
+          <article className="admin-simple-card" key={card.label}>
+            <div className="admin-simple-icon">
+              <card.icon size={26} />
             </div>
-          </div>
-        )}
-      </div>
-    </div>
+            <p>{card.label}</p>
+            <h3>{loading ? '...' : card.value}</h3>
+          </article>
+        ))}
+      </section>
+    </>
   );
 }

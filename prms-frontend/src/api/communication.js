@@ -9,6 +9,12 @@ export const communicationApi = {
   send(data) {
     return apiClient.post('/communication/send', data);
   },
+  getMessages(conversationId) {
+    return apiClient.get(`/communication/conversation/${conversationId}`);
+  },
+  markMessageRead(id) {
+    return apiClient.patch(`/communication/${id}/mark-read`);
+  },
 
   /* Notifications -- routes live under /admin */
   getNotifications(params) {

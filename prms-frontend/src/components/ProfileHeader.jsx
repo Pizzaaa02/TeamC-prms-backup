@@ -21,7 +21,7 @@ function ProfileHeader() {
 
   return (
     <header className="profile-header">
-      <div className="profile-avatar">
+      <div className="profile-page-avatar">
         {profileImgUrl ? (
           <img src={profileImgUrl} alt="Profile" />
         ) : (

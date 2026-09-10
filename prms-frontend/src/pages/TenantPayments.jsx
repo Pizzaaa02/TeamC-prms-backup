@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { paymentApi } from '../api/payment';
 import { authApi } from '../api/auth';
 
-const STATUS_TABS = ['all', 'due', 'completed', 'failed'];
+const STATUS_TABS = ['all', 'pending', 'paid', 'failed'];
 
 export default function TenantPayments() {
   const [tab, setTab] = useState('all');
@@ -23,7 +23,7 @@ export default function TenantPayments() {
   useEffect(() => { load(); }, [load]);
 
   const markPaid = async (id) => {
-    try { await paymentApi.markPaid(id); load(); } catch (e) { alert(e.response?.data?.message || 'Failed'); }
+    try { await paymentApi.simulate(id); load(); } catch (e) { alert(e.response?.data?.error?.message || 'Payment failed'); }
   };
 
   return (
@@ -49,13 +49,13 @@ export default function TenantPayments() {
             <tbody>
               {payments.map(p => (
                 <tr key={p._id || p.id}>
-                  <td>{p.property?.title || 'N/A'}</td>
-                  <td>{p.dueDate}</td>
-                  <td>$ {p.amount}</td>
+                  <td>{p.booking?.property?.title || p.property?.title || 'Property'}</td>
+                  <td>{new Date(p.due_date || p.dueDate).toLocaleDateString('en-MY')}</td>
+                  <td>{new Intl.NumberFormat('ms-MY', { style: 'currency', currency: 'MYR' }).format(p.amount)}</td>
                   <td><span className={`status-badge status-${(p.status||'').toLowerCase()}`}>{p.status}</span></td>
                   <td>
-                    {p.status === 'pending' && <button className="btn btn-sm btn-primary" onClick={() => markPaid(p._id || p.id)}>Pay Now</button>}
-                    <Link to={`/receipt/${p._id || p.id}`} className="btn btn-sm btn-outline ml-1">Receipt</Link>
+                    {(p.status || '').toUpperCase() === 'PENDING' && <button className="btn btn-sm btn-primary" onClick={() => markPaid(p._id || p.id)}>Pay in sandbox</button>}
+                    <Link to={`/tenant/payments/${p._id || p.id}`} className="btn btn-sm btn-outline ml-1">Receipt</Link>
                   </td>
                 </tr>
               ))}

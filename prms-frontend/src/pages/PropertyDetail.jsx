@@ -111,7 +111,7 @@ function BookingCard({ property, onBookClick }) {
         <div className="booking-card-header">
           <div>
             <div className="booking-price-line">
-              <span className="booking-price-amount">{formatRM(nightlyRate)} / {property.rent_period || 'month' || 'night'}</span>
+              <span className="booking-price-amount">{formatRM(nightlyRate)} / {property.rent_period || 'month'}</span>
               <span className="booking-rating">
                 <Star size={13} fill="#F59E0B" color="#F59E0B" />
                 {property.rating || '4.9'}{' '}
@@ -268,6 +268,20 @@ function PropertyDetail() {
   const [liked, setLiked] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
+  const [showMap, setShowMap] = useState(false);
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterStatus, setNewsletterStatus] = useState(null); // null | 'success' | 'error'
+
+  function handleNewsletterSubmit(e) {
+    e.preventDefault();
+    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newsletterEmail.trim());
+    if (!isValidEmail) {
+      setNewsletterStatus('error');
+      return;
+    }
+    setNewsletterStatus('success');
+    setNewsletterEmail('');
+  }
 
   /* Detect if rendered inside a role-protected PRMS layout.
      When true, hide the EstateSync topbar/footer so the PRMS
@@ -314,11 +328,6 @@ function PropertyDetail() {
   /* Description */
   const description = property?.description || '';
   const shortDesc = description.length > 350 ? description.slice(0, 350) + '...' : description;
-
-  /* Capacity line: X guests · Y bedrooms · Z baths */
-  const capacity = property?.capacity || 0;
-  const bedrooms = property?.bedrooms || 0;
-  const bathrooms = property?.bathrooms || 0;
 
   /* Star rating placeholder */
   const rating = property?.rating || '4.9';
@@ -448,7 +457,10 @@ function PropertyDetail() {
                     Hosted by {owner?.full_name || 'Property Owner'}
                   </h2>
                   <p className="pd-capacity-line">
-                    {capacity || 10} guests · {bedrooms || 5} bedrooms · {bathrooms || 4.5} baths
+                    {(() => {
+                      const t = property?.property_type || property?.propertyType || 'Property';
+                      return t.charAt(0).toUpperCase() + t.slice(1);
+                    })()}
                     {property?.floorArea && ` · ${property.floorArea} sq ft`}
                   </p>
                 </div>
@@ -616,21 +628,23 @@ function PropertyDetail() {
               <h3 className="pd-section-title">Where you'll be</h3>
               <p className="pd-map-location">{property.address || property.city || 'Kuala Lumpur'}</p>
               <div className="pd-map">
-                {/* Embedded map placeholder */}
-                {property.latitude && property.longitude ? (
+                {showMap ? (
                   <iframe
                     title="Property location"
                     className="pd-map-iframe"
-                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${property.longitude - 0.01},${property.latitude - 0.01},${property.longitude + 0.01},${property.latitude + 0.01}&layer=mapnik&marker=${property.latitude},${property.longitude}`}
+                    src={`https://www.google.com/maps?q=${encodeURIComponent(property.latitude && property.longitude ? `${property.latitude},${property.longitude}` : property.address || property.city || 'Kuala Lumpur')}&output=embed`}
                     width="100%"
                     height="300"
                     frameBorder="0"
                     allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
                   />
                 ) : (
                   <div className="pd-map-placeholder">
                     <MapPin size={48} />
-                    <span>Map coming soon — address: {property.address || 'TBD'}</span>
+                    <span>Load Google Maps to view this location. Google may receive your IP address and browser information.</span>
+                    <button type="button" className="btn btn-outline" onClick={() => setShowMap(true)}>Load map</button>
                   </div>
                 )}
               </div>
@@ -700,10 +714,28 @@ function PropertyDetail() {
             <div className="pd-footer-col">
               <h4>Newsletter</h4>
               <p>Get the latest travel news and property deals.</p>
-              <div className="pd-footer-newsletter">
-                <input type="email" placeholder="Email address" />
-                <button type="button">Join</button>
-              </div>
+              <form className="pd-footer-newsletter" onSubmit={handleNewsletterSubmit}>
+                <input
+                  type="email"
+                  placeholder="Email address"
+                  value={newsletterEmail}
+                  onChange={(e) => {
+                    setNewsletterEmail(e.target.value);
+                    setNewsletterStatus(null);
+                  }}
+                />
+                <button type="submit">Join</button>
+              </form>
+              {newsletterStatus === 'success' && (
+                <p className="pd-footer-newsletter-msg pd-footer-newsletter-msg--success">
+                  Thanks for subscribing!
+                </p>
+              )}
+              {newsletterStatus === 'error' && (
+                <p className="pd-footer-newsletter-msg pd-footer-newsletter-msg--error">
+                  Please enter a valid email address.
+                </p>
+              )}
             </div>
           </div>
           <div className="pd-footer-bottom">

@@ -100,7 +100,9 @@ export async function getUserMedia(userId: string, fileType?: string) {
       size: null,
       mime_type: 'image/jpeg',
       thumbnail_url: null,
-      date_added: img.created_at.toISOString(),
+      // PropertyImage has no created_at column in the schema, unlike
+      // UserProfileFile — there's no timestamp to report here.
+      date_added: null,
       type: 'property',
       file_type: 'property',
       property_title: img.property?.title,

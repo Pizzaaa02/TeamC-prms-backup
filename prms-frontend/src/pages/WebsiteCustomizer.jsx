@@ -10,18 +10,13 @@
  *     4. logo_url
  *     5. company_name
  *
- * All changes are pushed to the Flask backend via the /api/customizer
- * REST endpoints and reflected instantly in the preview.
+ * All changes are pushed to the backend via the /customizer REST
+ * endpoints (adminApi) and reflected instantly in the preview.
  */
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { adminApi } from "../api";
 import "./WebsiteCustomizer.css";
-
-// ---------- API client ----------
-
-const API_BASE = import.meta.env?.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL}`
-  : "http://localhost:5555";
 
 // ------ section management ------
 const STATIC_HEADER_BG = { backgroundColor: "#FFFFFF" };
@@ -38,45 +33,23 @@ const DEFAULT_SECTIONS = {
 };
 
 async function fetchConfig() {
-  const res = await fetch(`${API_BASE}/api/customizer`);
-  if (!res.ok) throw new Error(`GET /api/customizer -> ${res.status}`);
-  return res.json();
-}
-
-async function updateConfig(payload) {
-  const res = await fetch(`${API_BASE}/api/customizer`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) throw new Error(`PUT /api/customizer -> ${res.status}`);
-  return res.json();
+  const { data } = await adminApi.getCustomizerConfig();
+  return data;
 }
 
 async function patchField(field, value) {
-  const res = await fetch(`${API_BASE}/api/customizer/${field}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ [field]: value }),
-  });
-  if (!res.ok) throw new Error(`PATCH /api/customizer/${field} -> ${res.status}`);
-  return res.json();
+  const { data } = await adminApi.patchCustomizerField(field, value);
+  return data;
 }
 
 async function generateHtmlPreview() {
-  const res = await fetch(`${API_BASE}/api/customizer/generate-html`);
-  if (!res.ok) throw new Error(`GET generate-html -> ${res.status}`);
-  const blob = await res.blob();
-  return URL.createObjectURL(blob);
+  const { data } = await adminApi.generateCustomizerHtml();
+  return URL.createObjectURL(data);
 }
 
 async function resetConfig() {
-  const res = await fetch(`${API_BASE}/api/customizer/reset`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-  });
-  if (!res.ok) throw new Error("POST reset -> " + res.status);
-  return res.json();
+  const { data } = await adminApi.resetCustomizerConfig();
+  return data;
 }
 
 // ---------- Color picker input ----------
@@ -279,10 +252,11 @@ export default function WebsiteCustomizer({ config: initialConfig, onConfigChang
         const data = await fetchConfig();
         if (!cancelled) {
           setConfig(data);
-          setLoading(false);
         }
       } catch (err) {
         if (!cancelled) setError(err.message);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     })();
     return () => { cancelled = true; };

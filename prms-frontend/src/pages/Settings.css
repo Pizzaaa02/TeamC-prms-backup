@@ -46,7 +46,7 @@
 
 .settings-card h2 {
   margin: 0 0 var(--spacing-sm);
-  font-size: var(--heading-md);
+  font-size: 1.25rem;
   font-weight: 700;
   color: var(--on-surface);
 }
@@ -74,6 +74,16 @@
 .settings-card button:hover {
   background: var(--on-primary);
   color: var(--primary-container);
+}
+
+[data-theme="dark"] .settings-card button {
+  background: var(--primary-accent, #8a2be2);
+  color: #ffffff;
+}
+
+[data-theme="dark"] .settings-card button:hover {
+  background: #ffffff;
+  color: var(--primary-accent, #8a2be2);
 }
 
 @media (max-width: 900px) {

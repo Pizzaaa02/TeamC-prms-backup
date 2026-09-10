@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate, Outlet } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -11,6 +12,8 @@ import { buildNavItems, resolveActivePage } from './NavigationConfig'
 import NotificationDropdown from './NotificationDropdown'
 import ProfileDropdown from './ProfileDropdown'
 import ThemeSwitcher from './ThemeSwitcher'
+import { userApi } from '../api/user'
+import { propertyApi } from '../api/property'
 import './AdminLayout.css'
 
 function getTopbarTitle(activePage) {
@@ -44,6 +47,62 @@ function AdminLayout() {
     if (location.pathname !== path) navigate(path)
   }
 
+  const [globalSearch, setGlobalSearch] = useState('')
+  const [searchResults, setSearchResults] = useState({ users: [], properties: [] })
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchLoading, setSearchLoading] = useState(false)
+  const searchBoxRef = useRef(null)
+
+  useEffect(() => {
+    const q = globalSearch.trim()
+    if (!q) {
+      setSearchResults({ users: [], properties: [] })
+      setSearchOpen(false)
+      return
+    }
+    setSearchLoading(true)
+    const timer = setTimeout(async () => {
+      try {
+        const [usersRes, propsRes] = await Promise.all([
+          userApi.list({ search: q, limit: 4 }),
+          propertyApi.list({ search: q, limit: 4 }),
+        ])
+        setSearchResults({
+          users: usersRes?.data?.data ?? [],
+          properties: propsRes?.data?.data ?? [],
+        })
+        setSearchOpen(true)
+      } catch {
+        setSearchResults({ users: [], properties: [] })
+      } finally {
+        setSearchLoading(false)
+      }
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [globalSearch])
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target)) {
+        setSearchOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  function goToUser(user) {
+    setSearchOpen(false)
+    setGlobalSearch('')
+    navigate(`/admin/users?search=${encodeURIComponent(user.email || user.full_name || '')}`)
+  }
+
+  function goToProperty(property) {
+    setSearchOpen(false)
+    setGlobalSearch('')
+    navigate(`/admin/properties/edit/${property.id}`)
+  }
+
   function handleLogout() {
     logout(navigate)
   }
@@ -61,6 +120,8 @@ function AdminLayout() {
               className={`admin-layout-side-btn ${isActive ? 'active' : ''}`}
               onClick={() => safeNavigate(item.path)}
               title={item.label}
+              aria-label={item.label}
+              aria-current={isActive ? 'page' : undefined}
               whileTap={{ scale: 0.96 }}
             >
               <Icon size={25} />
@@ -76,6 +137,8 @@ function AdminLayout() {
           className={`admin-layout-side-btn ${activePage === 'help' ? 'active' : ''}`}
           onClick={() => safeNavigate('/admin/help')}
           title="Help"
+          aria-label="Help"
+          aria-current={activePage === 'help' ? 'page' : undefined}
           whileTap={{ scale: 0.96 }}
         >
           <CircleHelp size={24} />
@@ -87,6 +150,7 @@ function AdminLayout() {
           className="admin-layout-side-btn logout"
           onClick={handleLogout}
           title="Logout"
+          aria-label="Log out"
           whileTap={{ scale: 0.96 }}
         >
           <LogOut size={24} />

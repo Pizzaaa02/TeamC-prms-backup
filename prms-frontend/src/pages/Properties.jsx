@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, Link as RouterLink } from 'react-router-dom'
+import { useNavigate, Link as RouterLink, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { motion } from 'framer-motion'
 import {
@@ -8,9 +8,6 @@ import {
   DollarSign,
   Search,
   Filter,
-  Home,
-  Store,
-  Briefcase,
   Plus,
   RotateCw,
   Grid3x3,
@@ -21,13 +18,12 @@ import {
 import { getImageUrl } from '../config/imageHelper';
 import { propertyApi, getApiError } from '../api'
 import { ROUTES, getAddPropertyRoute, getPropertyDetailPath } from '../config/routes'
+import { PROPERTY_TYPES as CANONICAL_PROPERTY_TYPES, propertyTypeLabel } from '../config/propertyTypes'
 import './Properties.css'
 
-const PROPERTY_TYPES = [
-  { key: 'all', label: 'All Types', icon: Building2 },
-  { key: 'Residential', label: 'Residential', icon: Home },
-  { key: 'Commercial', label: 'Commercial', icon: Briefcase },
-  { key: 'Retail', label: 'Retail', icon: Store },
+const TYPE_FILTERS = [
+  { key: 'all', label: 'All Types' },
+  ...CANONICAL_PROPERTY_TYPES.map((t) => ({ key: t.value, label: t.label })),
 ]
 
 const STATUS_FILTERS = [
@@ -40,6 +36,7 @@ const STATUS_FILTERS = [
 
 function Properties() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { user } = useAuth()
   const [properties, setProperties] = useState([])
   const [loading, setLoading] = useState(true)
@@ -47,7 +44,9 @@ function Properties() {
   const [viewMode, setViewMode] = useState('grid')
   const [activeType, setActiveType] = useState('all')
   const [activeStatus, setActiveStatus] = useState('all')
-  const [searchTerm, setSearchTerm] = useState('')
+  const initialSearch = searchParams.get('search') || ''
+  const [searchTerm, setSearchTerm] = useState(initialSearch)
+  const [debouncedSearch, setDebouncedSearch] = useState(initialSearch.trim())
   const [currentPage, setCurrentPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
   const perPage = 12
@@ -56,16 +55,27 @@ function Properties() {
     setLoading(true)
     setError(null)
     try {
-      const { data } = await propertyApi.list({
-        page: currentPage,
-        limit: perPage,
-        type: activeType === 'all' ? undefined : activeType,
-        search: searchTerm.trim() || undefined,
-      })
+      const { data } = user?.role === 'Landlord'
+        ? await propertyApi.myProperties()
+        : await propertyApi.list({
+            page: currentPage,
+            limit: perPage,
+            type: activeType === 'all' ? undefined : activeType,
+            search: debouncedSearch || undefined,
+          })
       const list = data?.data || data?.properties || data
-      setProperties(Array.isArray(list) ? list : [])
+      const rows = Array.isArray(list) ? list : []
+      const landlordRows = user?.role === 'Landlord'
+        ? rows.filter((property) => {
+            const matchesType = activeType === 'all' || (property.property_type || '').toLowerCase() === activeType.toLowerCase()
+            const searchable = `${property.title || ''} ${property.address || ''} ${property.city || ''}`.toLowerCase()
+            return matchesType && (!debouncedSearch || searchable.includes(debouncedSearch.toLowerCase()))
+          })
+        : rows
+      setProperties(landlordRows)
 
       setTotalCount(
+        user?.role === 'Landlord' ? landlordRows.length :
         data?.pagination?.total ??
           data?.totalCount ??
           data?.total ??
@@ -79,23 +89,27 @@ function Properties() {
     }
   }
 
-  // Fetch on mount, page change, or type filter change
-  useEffect(() => {
-    fetchProperties()
-  }, [currentPage, activeType])
-
-  // Debounced search: reset page and trigger fetch via the above effect
+  // Debounce the raw search input into `debouncedSearch`
   useEffect(() => {
     const timer = setTimeout(() => {
-      setCurrentPage(1)
+      setDebouncedSearch(searchTerm.trim())
     }, 400)
     return () => clearTimeout(timer)
   }, [searchTerm])
 
+  // Any filter change goes back to page 1
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [activeType, debouncedSearch])
+
+  // Fetch whenever the page, type filter, or committed search term changes
+  useEffect(() => {
+    fetchProperties()
+  }, [currentPage, activeType, debouncedSearch])
+
   function handleSearch(e) {
     if (e) e.preventDefault()
-    setCurrentPage(1)
-    fetchProperties()
+    setDebouncedSearch(searchTerm.trim())
   }
 
   const totalPages = Math.max(Math.ceil(totalCount / perPage), 1)
@@ -155,7 +169,7 @@ function Properties() {
 
         <div className="properties-controls">
           <div className="properties-type-filters">
-            {PROPERTY_TYPES.map((t) => (
+            {TYPE_FILTERS.map((t) => (
               <button
                 type="button"
                 key={t.key}
@@ -165,7 +179,6 @@ function Properties() {
                   setCurrentPage(1)
                 }}
               >
-                <t.icon size={16} />
                 {t.label}
               </button>
             ))}
@@ -303,8 +316,8 @@ function Properties() {
                             <MapPin size={14} />
                             <span>{p.location || p.address || 'Location not set'}</span>
                           </div>
-                          <span className={`type-badge type-${(p.type || 'General').toLowerCase()}`}>
-                            {p.type || 'General'}
+                          <span className={`type-badge type-${(p.property_type || 'property').toLowerCase()}`}>
+                            {propertyTypeLabel(p.property_type)}
                           </span>
                           <div className="property-footer">
                             <div className="property-price">

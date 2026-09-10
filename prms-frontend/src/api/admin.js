@@ -57,46 +57,45 @@ export const adminApi = {
 
   /* Theme / Customization */
   getTheme() {
-    return apiClient.get('/admin/themes');
+    return apiClient.get('/themes');
   },
   saveDraft(themeId, lightConfig, darkConfig) {
-    return apiClient.put(`/admin/themes/${themeId}/draft`, { themeId, lightConfig, darkConfig });
+    return apiClient.put(`/themes/${themeId}/draft`, { themeId, lightConfig, darkConfig });
   },
   publishTheme(themeId) {
-    return apiClient.post(`/admin/themes/${themeId}/publish`);
+    return apiClient.post(`/themes/${themeId}/publish`);
   },
   getVersions(themeId) {
-    return apiClient.get(`/admin/themes/${themeId}/versions`);
+    return apiClient.get(`/themes/${themeId}/versions`);
   },
   restoreVersion(themeId, version) {
-    return apiClient.post(`/admin/themes/${themeId}/versions/${version}/restore`, { version });
+    return apiClient.post(`/themes/${themeId}/versions/${version}/restore`, { version });
   },
   /* Theme / Published theme */
   getThemeById(themeId) {
     return apiClient.get(`/admin/themes/${themeId}`);
   },
 
-  /* Website Customizer (Flask API) */
-  // These use the standalone Flask customizer server at /api/customizer
+  /* Website Customizer */
 
   getCustomizerConfig() {
-    return apiClient.get('/admin/customizer');
+    return apiClient.get('/customizer');
   },
 
   updateCustomizerConfig(data) {
-    return apiClient.put('/admin/customizer', data);
+    return apiClient.put('/customizer', data);
   },
 
   patchCustomizerField(field, value) {
-    return apiClient.patch(`/admin/customizer/${field}`, { [field]: value });
+    return apiClient.patch(`/customizer/${field}`, { value });
   },
 
   generateCustomizerHtml() {
-    return apiClient.get('/admin/customizer/generate-html');
+    return apiClient.get('/customizer/generate-html', { responseType: 'blob' });
   },
 
   resetCustomizerConfig() {
-    return apiClient.post('/admin/customizer/reset', {});
+    return apiClient.post('/customizer/reset', {});
   },
 
 };

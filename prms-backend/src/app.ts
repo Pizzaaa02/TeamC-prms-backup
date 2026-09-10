@@ -1,8 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import { initializeApp, getApps } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
+import { getFirebaseApp } from './modules/auth/firebase_auth';
 import { env } from './config';
 import { prisma } from './db';
 import path from 'path';
@@ -18,22 +18,16 @@ import paymentRoutes from './modules/payment/routes_payment';
 import maintenanceRoutes from './modules/maintenance/routes_maintenance';
 import communicationRoutes from './modules/communication/routes_communication';
 import adminRoutes from './modules/admin/routes_admin';
+import auditRoutes from './modules/admin/routes_audit';
 import reportingRoutes from './modules/reporting/routes_reporting';
 import agentRoutes from './modules/agent/routes_agent';
 import categoryRoutes from './modules/category/routes_category';
 import themeRoutes from './modules/theme/routes_theme';
 import favoriteRoutes from './modules/favorite/routes_favorite';
+import privacyRoutes from './modules/privacy/routes_privacy';
+import agreementRoutes from './modules/agreement/routes_agreement';
 
-// Initialize Firebase if possible
-if (getApps().length === 0) {
-  try {
-    initializeApp({
-      credential: env.GCP_SA_KEY ? JSON.parse(env.GCP_SA_KEY) : { projectId: 'prms-local' },
-    });
-  } catch {
-    console.log('[Firebase] Running without credential (local mode)');
-  }
-}
+// Firebase is initialized lazily by the shared, credential-aware auth helper.
 
 const app = express();
 const router = express.Router();
@@ -42,9 +36,17 @@ const PORT = env.PORT;
 app.use(helmet());
 // Parse CORS_ORIGIN: supports single string or comma-separated list → array
 const corsOrigins = env.CORS_ORIGIN.split(',').map((o: string) => o.trim());
-const corsOriginValue = corsOrigins.length === 1 ? corsOrigins[0] : corsOrigins;
-
-app.use(cors({ origin: corsOriginValue }));
+if (env.NODE_ENV === 'development') {
+  for (const localOrigin of ['http://localhost:5173', 'http://127.0.0.1:5173']) {
+    if (!corsOrigins.includes(localOrigin)) corsOrigins.push(localOrigin);
+  }
+}
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || corsOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('Origin is not permitted by CORS'));
+  },
+}));
 app.use(express.json());
 app.use(responseCache);
 app.use(requestLogger);
@@ -90,7 +92,7 @@ router.post('/auth/verify', async (req, res) => {
   try {
     const { token } = req.body;
     if (!token) return res.status(401).json({ error: 'Missing Firebase token' });
-    const decodedToken = await getAuth().verifyIdToken(token);
+    const decodedToken = await getAuth(getFirebaseApp()).verifyIdToken(token, true);
     res.json({ userId: decodedToken.uid, email: decodedToken.email, name: decodedToken.name });
   } catch (error) { res.status(401).json({ error: 'Invalid Firebase token' }); }
 });
@@ -104,11 +106,14 @@ router.use('/payments', paymentRoutes);
 router.use('/maintenance', maintenanceRoutes);
 router.use('/communication', communicationRoutes);
 router.use('/admin', adminRoutes);
+router.use('/admin', auditRoutes);
 router.use('/reports', reportingRoutes);
 router.use('/agents', agentRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/themes', themeRoutes);
 router.use('/favorites', favoriteRoutes);
+router.use('/privacy', privacyRoutes);
+router.use('/agreements', agreementRoutes);
 import notificationRoutes from './modules/notification/routes_notification';
 router.use('/notifications', notificationRoutes);
 

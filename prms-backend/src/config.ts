@@ -27,6 +27,7 @@ export const env = {
   FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
 
   GCP_SA_KEY: process.env.GCP_SA_KEY,
+  GOOGLE_APPLICATION_CREDENTIALS: process.env.GOOGLE_APPLICATION_CREDENTIALS,
 
 
   RATE_LIMIT_WINDOW_MS: parseInt(
@@ -40,7 +41,7 @@ export const env = {
   ),
 
   
-  CORS_ORIGIN: process.env.CORS_ORIGIN || "http://localhost:5173,http://localhost:5174,http://localhost:5175",
+  CORS_ORIGIN: process.env.CORS_ORIGIN || "http://localhost:5173,http://localhost:5174,http://localhost:5175,http://127.0.0.1:5173",
   
     
   ENABLE_FIREBASE_VERIFY: process.env.ENABLE_FIREBASE_VERIFY === "true",

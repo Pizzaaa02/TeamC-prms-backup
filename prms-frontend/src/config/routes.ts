@@ -19,6 +19,7 @@ export const ROUTES = {
   admin: {
     root: '/admin',
     dashboard: '/admin/dashboard',
+    notifications: '/admin/notifications',
     users: '/admin/users',
     properties: '/admin/properties',
     propertyAdd: '/admin/properties/add',
@@ -59,7 +60,9 @@ export const ROUTES = {
     root: '/tenant',
     dashboard: '/tenant/dashboard',
     properties: '/tenant/properties',
+    propertyDetail: (id: string) => `/tenant/properties/${id}`,
     bookings: '/tenant/bookings',
+    agreements: '/tenant/agreements',
     payments: '/tenant/payments',
     paymentDetails: (id: string) => `/tenant/payments/${id}`,
     maintenance: '/tenant/maintenance',

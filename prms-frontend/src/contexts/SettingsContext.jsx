@@ -105,8 +105,28 @@ export function SettingsProvider({ children }) {
   const [settingsRaw, setSettingsRaw] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [resolvedTheme, setResolvedTheme] = useState({});
+  const [themeConfigs, setThemeConfigs] = useState(null); // { light, dark } from the published theme, or null
+  const [themeMode, setThemeMode] = useState(() => document.documentElement.getAttribute('data-theme') || 'light');
   const [currentThemeId, setCurrentThemeId] = useState(null);
+
+  /* Track the data-theme attribute the ThemeSwitcher sets on <html>, so the
+     correct light/dark variant of any saved custom theme gets re-applied
+     whenever the user toggles light/dark mode. */
+  useEffect(() => {
+    const html = document.documentElement;
+    const observer = new MutationObserver(() => {
+      setThemeMode(html.getAttribute('data-theme') || 'light');
+    });
+    observer.observe(html, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => observer.disconnect();
+  }, []);
+
+  /* Merge the flat settings with whichever light/dark variant is active */
+  const resolvedTheme = useMemo(() => {
+    if (!themeConfigs) return settingsObj;
+    const themeConfig = themeMode === 'dark' ? themeConfigs.dark : themeConfigs.light;
+    return { ...settingsObj, ...(themeConfig || {}) };
+  }, [settingsObj, themeConfigs, themeMode]);
 
   /* Convert flat key-value object to CSS variables applied to <html> */
   const applyCssVariables = useCallback((settings) => {
@@ -188,38 +208,33 @@ export function SettingsProvider({ children }) {
 
       setSettingsObj(flat);
       setSettingsRaw(data);
-      applyCssVariables(flat);
 
-      // Fetch published theme
+      // Fetch published theme (both light and dark variants — which one
+      // actually applies is resolved reactively based on the current
+      // data-theme attribute, see the `resolvedTheme` memo above)
       try {
         const themeResp = await adminApi.getTheme();
         if (themeResp?.data?.data) {
           setCurrentThemeId(themeResp.data.data.id);
-          // Resolve light/dark based on data-theme on html
-          const htmlEl = document.documentElement;
-          const themeAttr = htmlEl.getAttribute('data-theme') || 'light';
           const latestVersion = themeResp.data.data.versions?.[0];
           if (latestVersion) {
-            const themeConfig = themeAttr === 'dark' ? latestVersion.darkConfig : latestVersion.lightConfig;
-            // Merge theme config over flat settings
-            const merged = { ...flat };
-            for (const [k, v] of Object.entries(themeConfig)) {
-              merged[k] = v;
-            }
-            setResolvedTheme(merged);
+            setThemeConfigs({
+              light: latestVersion.lightConfig || {},
+              dark: latestVersion.darkConfig || {},
+            });
           }
         }
       } catch (e) {
-        // Theme fetch failed — continue with flat settings
+        // Theme fetch failed — continue with flat settings only
       }
     } catch (err) {
       setError(err.message || 'Failed to load settings');
       /* Still apply defaults */
-      applyCssVariables(DEFAULTS);
+      setSettingsObj(DEFAULTS);
     } finally {
       setLoading(false);
     }
-  }, [applyCssVariables]);
+  }, []);
 
   /* Update a single setting (live preview mode) */
   const updateSetting = useCallback(async (key, value) => {
@@ -231,7 +246,6 @@ export function SettingsProvider({ children }) {
 
     const updated = { ...settingsObj, [key]: value };
     setSettingsObj(updated);
-    applyCssVariables(updated);
 
     /* Optimistic update in raw data */
     setSettingsRaw(prev => prev.map(s => s.key === key ? { ...s, value } : s));
@@ -249,7 +263,7 @@ export function SettingsProvider({ children }) {
       setSettingsRaw(prev => prev.map(s => s.key === key ? { ...s, value: previousValue } : s));
       setError('Failed to save setting: ' + err.message);
     }
-  }, [settingsObj, applyCssVariables]);
+  }, [settingsObj]);
 
   /* Batch update multiple settings */
   const bulkUpdateSettings = useCallback(async (settingsArray) => {
@@ -260,16 +274,16 @@ export function SettingsProvider({ children }) {
         updated[key] = value;
       }
       setSettingsObj(updated);
-      applyCssVariables(updated);
     } catch (err) {
       setError('Failed to bulk update settings: ' + err.message);
     }
-  }, [settingsObj, applyCssVariables]);
+  }, [settingsObj]);
 
-  /* Sync settingsObj to CSS variables on every change */
+  /* Apply the resolved (theme-mode-aware) settings as CSS variables whenever
+     the settings, the published theme, or the light/dark toggle changes */
   useEffect(() => {
-    applyCssVariables(settingsObj);
-  }, [settingsObj, applyCssVariables]);
+    applyCssVariables(resolvedTheme);
+  }, [resolvedTheme, applyCssVariables]);
 
   /* Load settings on mount */
   useEffect(() => {

@@ -1,3 +1,26 @@
+.admin-error-banner {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  color: var(--status-error);
+  font-size: 14px;
+}
+
+.admin-error-banner button {
+  border: none;
+  background: transparent;
+  color: var(--status-error);
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .admin-simple-hero {
   display: flex;
   align-items: flex-start;
@@ -8,16 +31,16 @@
 
 .admin-simple-hero h1 {
   margin: 0;
-  font-size: 46px;
-  line-height: 1.05;
-  letter-spacing: -1.5px;
-  font-weight: 500;
+  font-size: 28px;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+  font-weight: 700;
 }
 
 .admin-simple-hero p {
-  margin: var(--spacing-sm) 0 0;
+  margin: 6px 0 0;
   color: var(--text-secondary);
-  font-size: 22px;
+  font-size: 15px;
   max-width: 900px;
 }
 
@@ -170,6 +193,12 @@
   cursor: pointer;
 }
 
+.admin-simple-table-row button:disabled {
+  background: var(--surface-container-low);
+  color: var(--text-secondary);
+  cursor: not-allowed;
+}
+
 @media (max-width: 1250px) {
   .admin-simple-cards {
     grid-template-columns: repeat(2, 1fr);
@@ -179,10 +208,6 @@
 @media (max-width: 850px) {
   .admin-simple-hero {
     flex-direction: column;
-  }
-
-  .admin-simple-hero h1 {
-    font-size: 36px;
   }
 
   .admin-simple-cards {

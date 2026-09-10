@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { userApi } from '../api/user';
+import { authApi } from '../api/auth';
 
 const UserPreferencesContext = createContext(null);
 
@@ -14,12 +14,8 @@ export function UserPreferencesProvider({ children }) {
 
   const loadPreferences = useCallback(async () => {
     try {
-      const me = await userApi.getMe?.() || { data: {} };
+      const me = await authApi.getMe();
       if (me.data?.preferences) setPreferences(me.data.preferences);
-      else {
-        const res = await userApi.get('/auth/me');
-        if (res.data?.preferences) setPreferences(res.data.preferences);
-      }
     } catch (e) {
       console.warn('Failed to load preferences:', e);
     } finally {
@@ -33,7 +29,7 @@ export function UserPreferencesProvider({ children }) {
 
   const updatePreferences = useCallback(async (updates) => {
     try {
-      const res = await userApi.updateMe(updates);
+      const res = await authApi.updateMe(updates);
       if (res.data?.preferences) setPreferences(prev => ({ ...prev, ...res.data.preferences }));
       return res;
     } catch (e) {

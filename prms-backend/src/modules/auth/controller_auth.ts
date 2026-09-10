@@ -29,8 +29,9 @@ export class AuthController {
       return res.status(400).json({ success: false, error: { message: errors.array()[0].msg } });
     }
     try {
-      const { email, password, full_name, phone, role } = req.body;
-      const user = await authService.registerUser(email, password, full_name, phone, role);
+      const { email, password, full_name, phone, role, privacyConsent, marketingConsent } = req.body;
+      if (privacyConsent !== true) return res.status(400).json({ success: false, error: { message: 'Privacy notice consent is required' } });
+      const user = await authService.registerUser(email, password, full_name, phone, role, privacyConsent, marketingConsent === true);
       const tokens = authService.generateTokens(user.id);
       await authService.saveRefreshToken(user.id, tokens.refreshToken);
       HELPERS(req).log({ userId: user.id, username: user.email, userRole: role || 'Tenant', action: 'USER_REGISTRATION', entity: 'User', entityId: user.id, description: `New user registered with role ${role || 'Tenant'}`, status: 'Success', level: 'info' });
@@ -148,23 +149,17 @@ export class AuthController {
 
   googleLogin = async (req: Request, res: Response) => {
     try {
-      const { idToken, email, displayName } = req.body;
+      const { idToken } = req.body;
 
       let isNewUser = false;
-      let firebaseUid: string;
-
-      if (env.ENABLE_FIREBASE_VERIFY === true) {
-        if (!idToken) {
-          throw new Error('Firebase ID token required');
-        }
-
-        firebaseUid = await verifyFirebaseToken(idToken);
-      } else {
-        if (!email) {
-          throw new Error('Email is required when Firebase verification is disabled');
-        }
-        firebaseUid = `dev-${email.toLowerCase()}`;
+      if (!env.ENABLE_FIREBASE_VERIFY) {
+        return res.status(503).json({ success: false, error: { message: 'Google sign-in is not configured' } });
       }
+      if (typeof idToken !== 'string' || !idToken.trim()) {
+        throw new Error('Firebase ID token required');
+      }
+      // Identity and account linking must use signed claims, never browser-supplied email.
+      const { uid: firebaseUid, email, name: displayName } = await verifyFirebaseToken(idToken);
 
       // Step 1: find by firebase_uid
       let user = await prisma.user.findUnique({ where: { firebase_uid: firebaseUid }, include: { UserRole: { include: { role: true } } } });

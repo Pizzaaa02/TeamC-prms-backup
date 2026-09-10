@@ -1,4 +1,4 @@
-import { useState, useCallback, memo } from 'react';
+import { useState, useCallback, useMemo, memo } from 'react';
 import {
   ChevronRight, ChevronDown, Globe, Layout, Type,
   Image as ImageIcon, Menu as MenuIcon, Settings2,
@@ -127,7 +127,7 @@ const TreeNode = memo(function TokenTreeNode({ node, depth, selectedId, onSelect
       ))}
     </div>
   );
-}
+});
 
 function SearchInput({ value, onChange }) {
   return (

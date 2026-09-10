@@ -24,6 +24,7 @@ import {
 import { propertyApi } from '../api';
 import { useAuth } from '../contexts/AuthContext';
 import ImageGallery from '../components/ImageGallery';
+import { PROPERTY_TYPES } from '../config/propertyTypes';
 import './PropertyEdit.css';
 
 /* ================= VALIDATION HELPERS ================= */
@@ -141,7 +142,6 @@ function StatusPicker({ value, onChange }) {
 /* ================= PROPERTY TYPE SELECT ================= */
 
 function PropertyTypeSelect({ value, onChange }) {
-  const types = ['apartment', 'house', 'condominium', 'land', 'commercial', 'townhouse'];
   return (
     <div className="pe-group">
       <label htmlFor="propertyType" className="pe-field-label">
@@ -156,9 +156,9 @@ function PropertyTypeSelect({ value, onChange }) {
         aria-describedby="propertyTypeHelp"
       >
         <option value="">Select type</option>
-        {types.map((t) => (
-          <option key={t} value={t}>
-            {t.charAt(0).toUpperCase() + t.slice(1)}
+        {PROPERTY_TYPES.map((t) => (
+          <option key={t.value} value={t.value}>
+            {t.label}
           </option>
         ))}
       </select>
@@ -484,10 +484,6 @@ function PropertyEdit() {
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [description, setDescription] = useState('');
-  const [floorArea, setFloorArea] = useState('');
-  const [petPolicy, setPetPolicy] = useState('');
-  const [buildingFacilities, setBuildingFacilities] = useState([]);
-  const [newFacility, setNewFacility] = useState('');
 
   // Media
   const [images, setImages] = useState([]);
@@ -518,9 +514,6 @@ function PropertyEdit() {
           setCity(prop.city || '');
           setState(prop.state || '');
           setDescription(prop.description || '');
-          setFloorArea(prop.floorArea || '');
-          setPetPolicy(prop.petPolicy || '');
-          setBuildingFacilities(prop.buildingFacilities || []);
           setImages(prop.images || []);
           // Videos may be stored as PropertyImage with url ending in video types
           setVideos(prop.videos || []);
@@ -590,9 +583,6 @@ function PropertyEdit() {
         city: city.trim() || null,
         state: state.trim() || null,
         description: description.trim(),
-        floorArea: floorArea.trim() || null,
-        petPolicy: petPolicy.trim() || null,
-        buildingFacilities: buildingFacilities.filter((f) => f.trim()).length > 0 ? buildingFacilities.filter((f) => f.trim()) : [],
         images,
         videos,
         amenities,
@@ -882,87 +872,6 @@ function PropertyEdit() {
                 Description
               </label>
               <textarea id="editDesc" className="pe-textarea" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe your property..." rows={4} />
-            </div>
-
-            {/* Floor Area */}
-            <div className="pe-group">
-              <label htmlFor="editFloorArea" className="pe-field-label">
-                <Info size={18} />
-                Floor Area
-              </label>
-              <input
-                id="editFloorArea"
-                className="pe-input"
-                type="text"
-                inputMode="numeric"
-                value={floorArea}
-                onChange={(e) => setFloorArea(e.target.value)}
-                placeholder="e.g. 850 sq ft"
-              />
-              <span id="floorAreaHelp" className="pe-field-help">The total floor area of the property.</span>
-            </div>
-
-            {/* Pet Policy */}
-            <div className="pe-group">
-              <label htmlFor="editPetPolicy" className="pe-field-label">
-                <Info size={18} />
-                Pet Policy
-              </label>
-              <textarea
-                id="editPetPolicy"
-                className="pe-textarea"
-                value={petPolicy}
-                onChange={(e) => setPetPolicy(e.target.value)}
-                placeholder="e.g. Pets allowed with deposit..."
-                rows={3}
-              />
-              <span id="petPolicyHelp" className="pe-field-help">Specify any pet-friendly policies or restrictions.</span>
-            </div>
-
-            {/* Building Facilities */}
-            <div className="pe-group">
-              <span className="pe-field-label">
-                <Building2 size={18} />
-                Building Facilities
-              </span>
-              <div className="pe-facilities-list">
-                {buildingFacilities.map((facility, i) => (
-                  <span key={i} className="pe-facility-tag">
-                    {facility}
-                    <button type="button" className="pe-facility-remove" onClick={() => setBuildingFacilities((prev) => prev.filter((_, idx) => idx !== i))} aria-label={`Remove ${facility}`}>
-                      <X size={14} />
-                    </button>
-                  </span>
-                ))}
-                {buildingFacilities.length === 0 && <span className="pe-section-empty-text">No facility chips added yet.</span>}
-              </div>
-              <div className="pe-add-facility-row">
-                <input
-                  className="pe-input"
-                  type="text"
-                  placeholder="Add facility (e.g. Gym, Pool)..."
-                  value={newFacility}
-                  onChange={(e) => setNewFacility(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && newFacility.trim()) {
-                      setBuildingFacilities((prev) => [...prev, newFacility.trim()]);
-                      setNewFacility('');
-                    }
-                  }}
-                />
-                <button
-                  className="pe-btn-primary pe-add-facility-btn"
-                  onClick={() => {
-                    if (newFacility.trim()) {
-                      setBuildingFacilities((prev) => [...prev, newFacility.trim()]);
-                      setNewFacility('');
-                    }
-                  }}
-                  disabled={!newFacility.trim()}
-                >
-                  <Plus size={16} /> Add
-                </button>
-              </div>
             </div>
           </section>
 

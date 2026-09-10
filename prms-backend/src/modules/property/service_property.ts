@@ -8,10 +8,29 @@ export function normalizeDate(val: any): Date | undefined {
   return isNaN(d.getTime()) ? undefined : d;
 }
 
-export async function getAllProperties(page = 1, limit = 10) {
+export async function getAllProperties(page = 1, limit = 10, filters: { type?: string; search?: string } = {}) {
+  const where: any = {};
+
+  // SQLite has no case-insensitive `mode` option, and stored property_type
+  // values have inconsistent casing from older data — match common variants.
+  if (filters.type) {
+    const t = filters.type;
+    const variants = Array.from(new Set([t, t.toLowerCase(), t.toUpperCase(), t.charAt(0).toUpperCase() + t.slice(1).toLowerCase()]));
+    where.property_type = { in: variants };
+  }
+
+  if (filters.search) {
+    const s = filters.search;
+    where.OR = [
+      { title: { contains: s } },
+      { address: { contains: s } },
+      { city: { contains: s } },
+    ];
+  }
+
   const [properties, total] = await Promise.all([
-    prisma.property.findMany({ skip: (page - 1) * limit, take: limit, orderBy: { id: 'desc' }, include: { owner: { select: { id: true, full_name: true, email: true } }, amenities: true, images: true, category: true } }),
-    prisma.property.count(),
+    prisma.property.findMany({ where, skip: (page - 1) * limit, take: limit, orderBy: { id: 'desc' }, include: { owner: { select: { id: true, full_name: true, email: true } }, amenities: true, images: true, category: true } }),
+    prisma.property.count({ where }),
   ]);
   return { properties, total };
 }

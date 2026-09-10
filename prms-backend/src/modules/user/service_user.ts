@@ -75,3 +75,8 @@ export async function changeUserRole(id: string, roleName: string) {
   if (!role) throw new Error('Role not found');
   return prisma.userRole.create({ data: { userId: id, roleId: role.id } });
 }
+
+export async function reviewKyc(id: string, status: string, notes?: string) {
+  if (!['NOT_SUBMITTED', 'PENDING', 'VERIFIED', 'REJECTED'].includes(status)) throw new Error('Invalid KYC status');
+  return prisma.user.update({ where: { id }, data: { kycStatus: status, kycReviewNotes: notes, kycReviewedAt: new Date() }, select: safeUserSelect });
+}

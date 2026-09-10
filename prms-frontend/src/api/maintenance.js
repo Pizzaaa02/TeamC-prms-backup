@@ -4,6 +4,9 @@ export const maintenanceApi = {
   list(params) {
     return apiClient.get('/maintenance', { params });
   },
+  mine() {
+    return apiClient.get('/maintenance/mine');
+  },
   getById(id) {
     return apiClient.get(`/maintenance/${id}`);
   },
@@ -14,7 +17,7 @@ export const maintenanceApi = {
     return apiClient.get('/maintenance', { params: { status } });
   },
   updateStatus(id, status) {
-    return apiClient.patch(`/maintenance/${id}/status`, { status });
+    return apiClient.put(`/maintenance/${id}`, { status: status.toUpperCase() });
   },
   assignToAgent(ticketId, agentId) {
     return apiClient.patch(`/maintenance/${ticketId}/assign`, { agentId });

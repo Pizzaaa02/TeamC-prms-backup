@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { apiClient } from '../api';
+import { communicationApi } from '../api';
+import { useAuth } from '../contexts/AuthContext';
 import {
   Send,
   MessageCircle,
@@ -9,6 +10,7 @@ import {
 import './CommunicationHub.css';
 
 function CommunicationHub() {
+  const { user } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [selectedConv, setSelectedConv] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -32,23 +34,25 @@ function CommunicationHub() {
 
   async function loadConversations() {
     try {
-      const res = await apiClient.get('/messages');
+      const res = await communicationApi.list();
       const msgs = res.data?.data ?? [];
       // Group by conversationId
       const convMap = {};
       msgs.forEach((m) => {
         const cid = m.conversationId;
+        const isMine = m.senderId === user?.id;
+        const isUnreadForMe = !m.isRead && m.receiverId === user?.id;
         if (!convMap[cid]) {
-          const other = m.senderId === m.sender?.id ? m.receiver : m.sender;
+          const other = isMine ? m.receiver : m.sender;
           convMap[cid] = {
             id: cid,
             partner: other || { full_name: 'User' },
             lastMessage: m.content,
             lastAt: m.created_at,
-            unread: (m.receiverId !== m.sender?.id && !m.isRead) ? 1 : 0,
+            unread: isUnreadForMe ? 1 : 0,
           };
         } else {
-          if (!m.isRead && m.receiverId !== m.sender?.id) {
+          if (isUnreadForMe) {
             convMap[cid].unread += 1;
           }
         }
@@ -63,12 +67,12 @@ function CommunicationHub() {
 
   async function loadMessages() {
     try {
-      const res = await apiClient.get(`/messages/conversation/${selectedConv.id}`);
+      const res = await communicationApi.getMessages(selectedConv.id);
       setMessages(res.data?.data ?? []);
       // Mark all as read
       const unread = (res.data?.data ?? []).filter((m) => !m.isRead);
       await Promise.all(
-        unread.map((m) => apiClient.patch(`/messages/${m.id}/read`))
+        unread.map((m) => communicationApi.markMessageRead(m.id))
       );
       // Update unread count
       setConversations((prev) =>
@@ -82,7 +86,7 @@ function CommunicationHub() {
   async function handleSend() {
     if (!newMessage.trim()) return;
     try {
-      await apiClient.post('/messages', {
+      await communicationApi.send({
         content: newMessage,
         conversationId: selectedConv.id,
         receiverId: selectedConv.partner.id,
@@ -152,7 +156,7 @@ function CommunicationHub() {
           <div className="comm-messages">
             <AnimatePresence>
               {messages.map((msg) => {
-                const isMe = msg.senderId === msg.sender?.id;
+                const isMe = msg.senderId === user?.id;
                 return (
                   <motion.div
                     key={msg.id}

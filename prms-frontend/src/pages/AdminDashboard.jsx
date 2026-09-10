@@ -1,6 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
-import { apiClient, getApiError } from '../api/ApiClient'
-import { useSettings } from '../contexts/SettingsContext'
+import { apiClient } from '../api/ApiClient'
 import {
   Activity,
   AlertCircle,
@@ -13,7 +12,6 @@ import {
   Search,
   Server,
   ShieldCheck,
-  SlidersHorizontal,
   Users,
   WalletCards,
 } from 'lucide-react'
@@ -79,8 +77,6 @@ function formatCompact(value) {
 /* ------------------------------------------------------------------ */
 
 function AdminDashboard() {
-  const { settings } = useSettings()
-
   // Loading / error state
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -89,14 +85,12 @@ function AdminDashboard() {
   const [stats, setStats] = useState(null)
   const [occupancy, setOccupancy] = useState(null)
   const [users, setUsers] = useState([])
+  const [userSearch, setUserSearch] = useState('')
   const [auditLogs, setAuditLogs] = useState([])
   const [properties, setProperties] = useState([])
 
   useEffect(() => {
     localStorage.setItem('prmsDashboardPath', '/admin')
-
-    // Set dashboard timestamp (used for trend labels)
-    const dashboardTs = new Date().toISOString()
 
     // Fetch all dashboard data in parallel
     Promise.allSettled([
@@ -110,9 +104,12 @@ function AdminDashboard() {
         // Promise.allSettled wraps each result in {status, value|reason}
         setStats(dash.status === 'fulfilled' ? dash.value : null)
         setOccupancy(occ.status === 'fulfilled' ? occ.value : null)
-        setProperties(Array.isArray(props?.value) ? props.value : [])
-        setUsers(Array.isArray(usr?.value) ? usr.value : [])
-        setAuditLogs(Array.isArray(logs?.value) ? logs.value : [])
+        setProperties(props.status === 'fulfilled' && Array.isArray(props.value) ? props.value : [])
+        setUsers(usr.status === 'fulfilled' && Array.isArray(usr.value) ? usr.value : [])
+        setAuditLogs(logs.status === 'fulfilled' && Array.isArray(logs.value) ? logs.value : [])
+
+        const failures = [dash, occ, props, usr, logs].filter((r) => r.status === 'rejected')
+        setError(failures.length ? failures[0].reason?.message || 'Some dashboard data failed to load' : null)
       })
       .finally(() => {
         // Short delay so skeleton is visible briefly
@@ -134,8 +131,8 @@ function AdminDashboard() {
         label: 'Active Users',
         value: formatCompact(stats.totalUsers),
         sublabel: `${stats.totalProperties} properties listed`,
-        trend: `+${(stats.totalUsers || 0)}`,
-        trendDir: 'up',
+        // No historical snapshot exists yet to compute a real change-over-time
+        // trend, so we don't show a fake "+N" pill that just repeats the total.
       },
       {
         icon: WalletCards,
@@ -143,8 +140,6 @@ function AdminDashboard() {
         label: 'Total Revenue',
         value: formatCurrency(revenue),
         sublabel: `${stats.totalBookings || 0} bookings processed`,
-        trend: formatCurrency(revenue),
-        trendDir: revenue > 0 ? 'up' : 'neutral',
       },
       {
         icon: Database,
@@ -152,8 +147,6 @@ function AdminDashboard() {
         label: 'Occupancy',
         value: occupancy ? `${occupancy.occupancyRate}%` : '—',
         sublabel: `${occupancy ? occupancy.activeBookings : 0} active of ${occupancy ? occupancy.totalProperties || 0 : 0} total`,
-        trend: occupancy ? `${occupancy.occupancyRate}%` : '—',
-        trendDir: (occupancy && occupancy.occupancyRate > 70) ? 'up' : 'neutral',
       },
       {
         icon: ShieldCheck,
@@ -179,6 +172,16 @@ function AdminDashboard() {
     }
     return Object.values(byStatus).slice(0, 4)
   }, [properties])
+
+  const filteredUsers = useMemo(() => {
+    const q = userSearch.trim().toLowerCase()
+    if (!q) return users
+    return users.filter((user) =>
+      (user.full_name || '').toLowerCase().includes(q) ||
+      (user.email || '').toLowerCase().includes(q) ||
+      getRoleName(user).toLowerCase().includes(q)
+    )
+  }, [users, userSearch])
 
   /* ---- KPI Card helper ---- */
   function KpiCard({ icon: Icon, iconBg, label, value, sublabel, trend, trendDir }) {
@@ -237,6 +240,29 @@ function AdminDashboard() {
     return 'user-role--tenant'
   }
 
+  function exportUsersCsv() {
+    const header = 'Name,Email,Role,Status,Last Seen'
+    const rows = users.map((u) =>
+      [
+        u.full_name || '',
+        u.email || '',
+        getRoleName(u),
+        u.is_active !== false ? 'Active' : 'Suspended',
+        u.updated_at || '',
+      ]
+        .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+        .join(',')
+    )
+    const csv = [header, ...rows].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'users.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   /* ---- Audit log mapping ---- */
   const mappedLogs = auditLogs.map((log) => {
     const level = (log.level || '').toLowerCase()
@@ -270,11 +296,7 @@ function AdminDashboard() {
         </div>
 
         <div className="landlord-page-actions">
-          <button type="button" className="btn-outline">
-            <SlidersHorizontal size={18} />
-            Filter
-          </button>
-          <button type="button" className="btn-primary-solid">
+          <button type="button" className="btn-primary-solid" onClick={exportUsersCsv}>
             <Download size={18} />
             Export
           </button>
@@ -318,9 +340,9 @@ function AdminDashboard() {
               ? kpiData.map((kpi, i) => <KpiCard key={i} {...kpi} />)
               : /* Fallback when no data */
                 [
-                  { icon: Activity, iconBg: 'icon-emerald', label: 'Active Users', value: '—', sublabel: 'No data', trend: '—', trendDir: 'neutral' },
-                  { icon: WalletCards, iconBg: 'icon-purple', label: 'Total Revenue', value: 'RM 0', sublabel: 'No transactions', trend: '0', trendDir: 'neutral' },
-                  { icon: Database, iconBg: 'icon-blue', label: 'Occupancy', value: '—', sublabel: 'No properties', trend: '—', trendDir: 'neutral' },
+                  { icon: Activity, iconBg: 'icon-emerald', label: 'Active Users', value: '—', sublabel: 'No data' },
+                  { icon: WalletCards, iconBg: 'icon-purple', label: 'Total Revenue', value: 'RM 0', sublabel: 'No transactions' },
+                  { icon: Database, iconBg: 'icon-blue', label: 'Occupancy', value: '—', sublabel: 'No properties' },
                   { icon: ShieldCheck, iconBg: 'icon-rose', label: 'System Integrity', value: 'Secure', sublabel: 'Monitoring active', trend: 'OK', trendDir: 'up' },
                 ].map((kpi, i) => <KpiCard key={i} {...kpi} />)}
           </>
@@ -340,7 +362,12 @@ function AdminDashboard() {
             </div>
             <div className="admin-search">
               <Search size={16} />
-              <input type="text" placeholder="Search users..." />
+              <input
+                type="text"
+                placeholder="Search users..."
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+              />
             </div>
           </div>
 
@@ -361,13 +388,13 @@ function AdminDashboard() {
                   </div>
                 </div>
               ))
-            ) : !users.length ? (
+            ) : !filteredUsers.length ? (
               <div style={{ padding: 'var(--spacing-lg) var(--spacing-sm)', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '14px' }}>
-                No users found
+                {userSearch ? `No users match "${userSearch}"` : 'No users found'}
               </div>
             ) : (
               /* Real user rows */
-              users.map((user) => {
+              filteredUsers.map((user) => {
                 const roleName = getRoleName(user)
                 const isActive = user.is_active !== false
                 return (
@@ -385,7 +412,7 @@ function AdminDashboard() {
                       <span className="status-dot" />
                       {isActive ? 'Active' : 'Suspended'}
                     </span>
-                    <p className="admin-activity">{formatRelative(user.updated_at || user.id)}</p>
+                    <p className="admin-activity">{formatRelative(user.updated_at)}</p>
                   </div>
                 )
               })

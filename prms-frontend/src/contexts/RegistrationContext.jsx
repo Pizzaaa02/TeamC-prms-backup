@@ -28,6 +28,13 @@ export function RegistrationProvider({ children }) {
   }, [selectedRole]);
 
   const setSelectedRole = useCallback((role) => {
+    // Persist immediately before navigation. Waiting for the effect creates a
+    // race where the registration guard can redirect back to role selection.
+    if (role) {
+      sessionStorage.setItem(STORAGE_KEY, role);
+    } else {
+      sessionStorage.removeItem(STORAGE_KEY);
+    }
     setSelectedRoleState(role);
     setPendingRegistration(!!role);
   }, []);

@@ -83,17 +83,20 @@ function buildWhere(filters: AuditFilters): any {
   if (filters.action) where.action = filters.action;
   if (filters.level) where.level = filters.level;
   if (filters.userId) where.userId = filters.userId;
+  // Note: no `mode: 'insensitive'` — the SQLite provider (this project's DB)
+  // doesn't support it and throws a validation error if it's passed. SQLite's
+  // `contains`/`equals` are already case-insensitive for ASCII by default.
   if (filters.username) {
-    where.username = { contains: filters.username, mode: 'insensitive' };
+    where.username = { contains: filters.username };
   }
   if (filters.module) {
-    where.module = { equals: filters.module, mode: 'insensitive' };
+    where.module = { equals: filters.module };
   }
   if (filters.entity) {
-    where.entity = { contains: filters.entity, mode: 'insensitive' };
+    where.entity = { contains: filters.entity };
   }
   if (filters.status) {
-    where.status = { equals: filters.status, mode: 'insensitive' };
+    where.status = { equals: filters.status };
   }
   if (filters.dateFrom || filters.dateTo) {
     where.created_at = {};
@@ -102,10 +105,10 @@ function buildWhere(filters: AuditFilters): any {
   }
   if (filters.search) {
     where.OR = [
-      { action: { contains: filters.search, mode: 'insensitive' } },
-      { description: { contains: filters.search, mode: 'insensitive' } },
-      { username: { contains: filters.search, mode: 'insensitive' } },
-      { entity: { contains: filters.search, mode: 'insensitive' } },
+      { action: { contains: filters.search } },
+      { description: { contains: filters.search } },
+      { username: { contains: filters.search } },
+      { entity: { contains: filters.search } },
     ];
   }
 

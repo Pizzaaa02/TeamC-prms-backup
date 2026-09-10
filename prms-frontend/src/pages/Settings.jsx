@@ -28,6 +28,13 @@ function getAuditLogsPath(role) {
   return ROUTES.admin.auditLogs
 }
 
+function getNotificationsPath(role) {
+  if (!role) return ROUTES.admin.notifications
+  const lower = role.toLowerCase()
+  if (lower.includes('admin')) return ROUTES.admin.notifications
+  return ROUTES.admin.notifications
+}
+
 function getCustomizerPath(role) {
   if (!role) return ROUTES.admin.customizer
   const lower = role.toLowerCase()
@@ -44,6 +51,7 @@ function Settings() {
   const profilePath = getProfilePath(user?.role)
   const auditLogsPath = getAuditLogsPath(user?.role)
   const customizerPath = getCustomizerPath(user?.role)
+  const notificationsPath = getNotificationsPath(user?.role)
 
   return (
     <div className="admin-content" data-customize-id="global.content">
@@ -74,7 +82,7 @@ function Settings() {
           <h2>Notification Settings</h2>
           <p>Control alerts for rent, bookings, maintenance updates, and reminders.</p>
 
-          <button type="button">Manage Notifications</button>
+          <button type="button" onClick={() => navigate(notificationsPath)}>Manage Notifications</button>
         </div>
 
         <div className="settings-card">
