@@ -1,0 +1,8 @@
+.payment-demo-notice{padding:14px 18px;border:1px solid var(--border-low,#cbd5e1);border-radius:12px;background:rgba(139,92,246,.08);line-height:1.6}
+.payment-table-scroll{overflow-x:auto;width:100%}.payment-table-scroll table{min-width:680px;width:100%}
+.payment-row-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0}
+.payment-state{display:inline-block;padding:5px 9px;border-radius:8px;background:#e2e8f0;color:#334155;font-size:12px;font-weight:700}
+.payment-state-paid{background:#dcfce7;color:#166534}.payment-state-failed{background:#fee2e2;color:#991b1b}
+.payment-pagination{display:flex;align-items:center;justify-content:flex-end;gap:12px;padding:16px}
+.tenant-payment-page .status-filter{display:flex;flex-wrap:wrap}.tenant-payment-page select{padding:10px;border-radius:8px;max-width:100%}
+@media(max-width:640px){.payment-pagination{justify-content:center}.payment-row-actions{align-items:flex-start}.tenant-payment-page{min-width:0}}
