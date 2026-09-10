@@ -19,6 +19,9 @@ import {
   Wrench,
 } from 'lucide-react'
 import { getImageUrl } from '../config/imageHelper';
+import { agentApi } from '../api/agents'
+import { bookingApi } from '../api/booking'
+import { maintenanceApi } from '../api/maintenance'
 import './AgentDashboard.css'
 
 function AgentDashboard() {
@@ -37,50 +40,57 @@ function AgentDashboard() {
     localStorage.setItem('prmsDashboardPath', '/agent')
 
     const fetchData = async () => {
-      setAssignedProperties([
-        {
-          id: '1',
-          title: 'Modern Apartment',
-          address: '123 Main St, City',
-          rent: 1200,
-          status: 'AVAILABLE',
-          image:
-            'https://images.unsplash.com/photo-1560448204-e02f11c3d0fd?q=80&w=1200&auto=format&fit=crop',
-        },
-        {
-          id: '2',
-          title: 'Luxury Condo',
-          address: '456 Park Ave, City',
-          rent: 2500,
-          status: 'RENTED',
-          image:
-            'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?q=80&w=1200&auto=format&fit=crop',
-        },
-      ])
+      try {
+        const [propsRes, bookingsRes, ticketsRes] = await Promise.all([
+          agentApi.myProperties({ limit: 100 }),
+          bookingApi.assigned(),
+          maintenanceApi.assigned({ limit: 100 }),
+        ])
 
-      setBookings([
-        {
-          id: '1',
-          propertyTitle: 'Modern Apartment',
-          tenant: 'John Doe',
-          startDate: '2023-06-01',
-          endDate: '2023-08-31',
-          status: 'CONFIRMED',
-        },
-      ])
+        const properties = propsRes.data?.data || []
+        setAssignedProperties(
+          properties.map((p) => ({
+            id: p.id,
+            title: p.title,
+            address: p.address || '',
+            rent: p.rent || 0,
+            status: p.status,
+            image: getImageUrl(p.images?.[0]?.url) || 'https://images.unsplash.com/photo-1560448204-e02f11c3d0fd?q=80&w=1200&auto=format&fit=crop',
+          }))
+        )
 
-      setMaintenanceRequests([
-        {
-          id: '1',
-          propertyTitle: 'Modern Apartment',
-          title: 'Kitchen Faucet Repair',
-          priority: 'HIGH',
-          status: 'OPEN',
-          createdDate: '2023-06-10',
-        },
-      ])
+        const propertyNames = Object.fromEntries(properties.map((p) => [p.id, p.title]))
 
-      setLoading(false)
+        const allBookings = bookingsRes.data?.data || []
+        setBookings(
+          allBookings
+            .filter((b) => b.status === 'CONFIRMED' || b.status === 'CHECKED_IN')
+            .map((b) => ({
+              id: b.id,
+              propertyTitle: b.property?.title || 'Property',
+              tenant: b.user?.full_name || b.user?.email || 'Tenant',
+              startDate: b.start_date ? new Date(b.start_date).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A',
+              endDate: b.end_date ? new Date(b.end_date).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A',
+              status: b.status,
+            }))
+        )
+
+        const tickets = ticketsRes.data?.data || []
+        setMaintenanceRequests(
+          tickets.map((t) => ({
+            id: t.id,
+            propertyTitle: propertyNames[t.propertyId] || 'Property',
+            title: t.title,
+            priority: t.priority,
+            status: t.status,
+            createdDate: t.created_at ? new Date(t.created_at).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A',
+          }))
+        )
+      } catch (e) {
+        console.error('Failed to load agent dashboard data:', e)
+      } finally {
+        setLoading(false)
+      }
     }
 
     fetchData()
@@ -141,7 +151,7 @@ function AgentDashboard() {
       <div className="landlord-page-title-row">
         <div>
           <h1>
-            <span className="material-symbols-outlined brand-icon">person_apARTment</span>
+            <span className="material-symbols-outlined brand-icon">apartment</span>
             Agent Dashboard
           </h1>
           <p>Welcome back, {user.full_name} — here&apos;s your portfolio overview.</p>

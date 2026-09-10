@@ -260,4 +260,58 @@ export class AuthController {
       res.status(400).json({ success: false, error: { message: error.message } });
     }
   };
+
+  forgotPassword = async (req: Request, res: Response) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, error: { message: errors.array()[0].msg } });
+      }
+      const { email } = req.body;
+      const code = await authService.generateOtpCode(email);
+      HELPERS(req).log({ username: email, action: 'FORGOT_PASSWORD', entity: 'User', description: `OTP generated for ${email}`, status: 'Success', level: 'info' });
+      res.json(successResponse({ code }, 'OTP generated'));
+    } catch (error: any) {
+      HELPERS(req).log({ action: 'FORGOT_PASSWORD', entity: 'User', description: `Forgot password failed: ${error.message}`, status: 'Failed', level: 'error', errorMessage: error.message });
+      res.status(400).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  verifyOtp = async (req: Request, res: Response) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, error: { message: errors.array()[0].msg } });
+      }
+      const { email, otp } = req.body;
+      await authService.verifyOtpCode(email, otp);
+      HELPERS(req).log({ username: email, action: 'VERIFY_OTP', entity: 'User', description: 'OTP verified successfully', status: 'Success', level: 'info' });
+      res.json(successResponse(null, 'OTP verified'));
+    } catch (error: any) {
+      HELPERS(req).log({ action: 'VERIFY_OTP', entity: 'User', description: `Verify OTP failed: ${error.message}`, status: 'Failed', level: 'error', errorMessage: error.message });
+      res.status(400).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  resetPassword = async (req: Request, res: Response) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, error: { message: errors.array()[0].msg } });
+      }
+      const { email, otp, newPassword, confirmPassword } = req.body;
+      if (!newPassword || newPassword.length < 6) {
+        return res.status(400).json({ success: false, error: { message: 'New password must be at least 6 characters' } });
+      }
+      if (newPassword !== confirmPassword) {
+        return res.status(400).json({ success: false, error: { message: 'Passwords do not match' } });
+      }
+      await authService.resetPassword(email, newPassword);
+      HELPERS(req).log({ username: email, action: 'PASSWORD_RESET', entity: 'User', description: 'Password reset successfully for ' + email, status: 'Success', level: 'info' });
+      res.json(successResponse(null, 'Password reset successfully'));
+    } catch (error: any) {
+      HELPERS(req).log({ action: 'PASSWORD_RESET', entity: 'User', description: `Password reset failed: ${error.message}`, status: 'Failed', level: 'error', errorMessage: error.message });
+      res.status(400).json({ success: false, error: { message: error.message } });
+    }
+  };
 }

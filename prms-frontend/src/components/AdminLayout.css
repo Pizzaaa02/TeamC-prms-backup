@@ -2,8 +2,8 @@
   min-height: 100vh;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  background: var(--background-color);
-  color: var(--text-color);
+  background: var(--page-bg);
+  color: var(--text-primary);
 }
 
 .admin-layout-sidebar {

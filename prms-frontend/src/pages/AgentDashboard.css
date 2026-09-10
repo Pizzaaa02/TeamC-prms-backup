@@ -5,6 +5,9 @@
    ====================================================== */
 
 .agent-dashboard-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
   animation: fade-in 0.4s ease;
 }
 

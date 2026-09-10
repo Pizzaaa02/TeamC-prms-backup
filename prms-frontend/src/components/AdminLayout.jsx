@@ -28,6 +28,7 @@ function getTopbarTitle(activePage) {
     messages: 'Admin Messages',
     reports: 'Reports & Audit',
     categories: 'Category Management',
+    'audit-logs': 'Audit Logs',
     settings: 'Admin Settings',
     help: 'Admin Help Center',
   }

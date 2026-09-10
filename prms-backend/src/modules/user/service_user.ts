@@ -73,5 +73,12 @@ export async function changeUserRole(id: string, roleName: string) {
   }
   const role = await prisma.role.findUnique({ where: { name: roleName } });
   if (!role) throw new Error('Role not found');
-  return prisma.userRole.create({ data: { userId: id, roleId: role.id } });
+  const result = await prisma.userRole.create({ data: { userId: id, roleId: role.id } });
+  if (roleName === 'Agent') {
+    // Agent-role users are looked up through a separate Agent record, not
+    // the User row directly — without this, assigning the Agent role here
+    // leaves their assigned-properties/bookings/tickets queries empty forever.
+    await prisma.agent.upsert({ where: { userId: id }, update: {}, create: { userId: id } });
+  }
+  return result;
 }

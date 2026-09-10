@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Modal from '../components/Modal';
 import { maintenanceApi } from '../api/maintenance';
+import './SharedPageShell.css';
 
 const STATUS_TABS = ['all', 'in_progress', 'resolved', 'closed'];
 
@@ -13,7 +14,7 @@ export default function LandlordMaintenance() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await maintenanceApi.list({ status: tab === 'all' ? undefined : tab, scope: 'my-properties' });
+      const res = await maintenanceApi.list({ status: tab === 'all' ? undefined : tab.toUpperCase(), scope: 'my-properties' });
       setTickets(res.data?.data || []);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
@@ -23,7 +24,7 @@ export default function LandlordMaintenance() {
 
   const verify = async (id, approved) => {
     try {
-      await maintenanceApi.updateStatus(id, approved ? 'closed' : 'in_progress');
+      await maintenanceApi.updateStatus(id, approved ? 'CLOSED' : 'IN_PROGRESS');
       setSelected(null); load();
     } catch (e) { alert('Failed'); }
   };
@@ -66,8 +67,8 @@ export default function LandlordMaintenance() {
                 <tr key={t._id || t.id}>
                   <td>{t.title}</td>
                   <td>{t.property?.title || 'N/A'}</td>
-                  <td><span className={`status-badge status-${t.priority}`}>{t.priority}</span></td>
-                  <td><span className={`status-badge status-${(t.status||'').toLowerCase()}`}>{t.status}</span></td>
+                  <td><span className={`shell-status-badge status-${t.priority}`}>{t.priority}</span></td>
+                  <td><span className={`shell-status-badge status-${(t.status||'').toLowerCase()}`}>{t.status}</span></td>
                   <td>{t.assignedTo?.full_name ?? t.assignedTo?.name ?? '—'}</td>
                   <td><button className="btn btn-sm btn-outline" onClick={() => setSelected(t)}>Detail</button></td>
                 </tr>

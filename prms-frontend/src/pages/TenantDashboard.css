@@ -5,6 +5,9 @@
    ====================================================== */
 
 .tenant-dashboard-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
   animation: fade-in 0.4s ease;
 }
 
@@ -58,7 +61,6 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-xs);
   overflow: hidden;
-  margin-top: var(--spacing-lg);
 }
 
 .saved-header {

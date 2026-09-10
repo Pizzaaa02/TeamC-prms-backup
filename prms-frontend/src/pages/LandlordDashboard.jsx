@@ -40,6 +40,10 @@ function LandlordDashboard() {
   const [propertiesList, setPropertiesList] = useState([])
   const [revenueBars, setRevenueBars] = useState([])
 
+  useEffect(() => {
+    loadDashboard()
+  }, [])
+
   async function loadDashboard() {
     setLoading(true)
     let errCount = 0
@@ -47,8 +51,8 @@ function LandlordDashboard() {
     try {
       /* ---- Booking stats (pending / confirmed / cancelled counts) ---- */
       try {
-        const res = await bookingApi.list({ limit: 100 })
-        const bookings = res?.data?.data?.items ?? res?.data ?? []
+        const res = await bookingApi.landlordBookings({ limit: 100 })
+        const bookings = res?.data?.data ?? []
         const pending = bookings.filter((b) => b.status === 'PENDING').length
         const confirmed = bookings.filter((b) => b.status === 'CONFIRMED').length
         const cancelled = bookings.filter((b) => b.status === 'CANCELLED').length
@@ -75,7 +79,7 @@ function LandlordDashboard() {
       /* ---- Property stats (occupancy, total/active) ---- */
       try {
         const propsRes = await propertyApi.list({ limit: 100 })
-        const props = propsRes?.data?.data?.items ?? propsRes?.data ?? []
+        const props = propsRes?.data?.data ?? []
         const total = props.length
         const active = props.filter((p) => p.status === 'Active' || p.status === 'AVAILABLE').length
         const rate = total > 0 ? Math.round((active / total) * 100) : 0
@@ -91,7 +95,7 @@ function LandlordDashboard() {
       /* ---- Maintenance stats (open tickets, urgent) ---- */
       try {
         const maintRes = await maintenanceApi.list({ limit: 100 })
-        const tickets = maintRes?.data?.data?.items ?? maintRes?.data ?? []
+        const tickets = maintRes?.data?.data ?? []
         const open = tickets.filter((m) => m.status === 'OPEN' || m.status === 'IN_PROGRESS').length
         const urgent = tickets.filter((m) => m.priority === 'HIGH').length
         setStats((s) => ({ ...s, openTickets: open, urgentTickets: urgent }))
@@ -129,7 +133,11 @@ function LandlordDashboard() {
       prev.map((a) => (a.id === bookingId ? { ...a, approving: true, approvalMsg: '' } : a))
     )
     try {
-      await bookingApi.updateStatus(bookingId, status)
+      if (status === 'CONFIRMED') {
+        await bookingApi.confirm(bookingId)
+      } else {
+        await bookingApi.reject(bookingId)
+      }
       setApprovals((prev) =>
         prev.map((a) =>
           a.id === bookingId

@@ -94,7 +94,7 @@
 .tenant-booking-check-btn {
   width: 100%;
   padding: 12px;
-  background: var(--primary-color);
+  background: var(--primary-container);
   color: var(--on-primary);
   border: none;
   border-radius: 10px;

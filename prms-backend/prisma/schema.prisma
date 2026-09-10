@@ -67,7 +67,7 @@ model AgentProperty {
 
 model PropertyCategory {
   id             String     @id @default(uuid())
-  name           String     @unique
+  name           String
   description    String?
   isShared       Boolean    @default(true)
   ownerId        String?
@@ -77,6 +77,7 @@ model PropertyCategory {
   updated_at     DateTime   @updatedAt
   properties     Property[]
 
+  @@unique([ownerId, name])
   @@index([isShared])
   @@index([ownerId])
   @@map("property_categories")
@@ -404,4 +405,30 @@ model UserProfileFile {
 
   @@index([userId])
   @@map("user_profile_files")
+}
+
+model WebsiteCustomizer {
+  id             String  @id @default(uuid())
+  company_name   String  @default("PRMS")
+  logo_url       String?
+  logo_thumb_url String?
+  // Light mode colors
+  light_header_bg    String @default("#FFFFFF")
+  light_sidebar_bg   String @default("#FFFFFF")
+  light_body_bg      String @default("#F8FAFC")
+  light_footer_bg    String @default("#F1F5F9")
+  light_accent_color String @default("#8A2BE2")
+  light_card_bg    String @default("#FFFFFF")
+  // Dark mode colors
+  dark_header_bg    String @default("#1E293B")
+  dark_sidebar_bg   String @default("#1E293B")
+  dark_body_bg      String @default("#0F172A")
+  dark_footer_bg    String @default("#020617")
+  dark_accent_color String @default("#A78BFA")
+  dark_card_bg    String @default("#334155")
+  // Theme switch
+  active_theme String @default("light") // "light" | "dark"
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  @@map("website_customizer")
 }

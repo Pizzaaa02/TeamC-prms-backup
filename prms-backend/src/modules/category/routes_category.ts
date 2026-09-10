@@ -11,6 +11,13 @@ router.use(authenticate);
 // Shared categories - any authenticated user can read
 router.get('/shared', ctrl.shared);
 
+// Personal (non-admin) endpoints - a landlord's own categories
+router.get('/personal', ctrl.personalList);
+router.post('/personal', ctrl.createPersonal);
+router.put('/personal/:id', ctrl.updatePersonal);
+router.delete('/personal/:id', ctrl.removePersonal);
+router.patch('/personal/:id/toggle', ctrl.togglePersonal);
+
 // Admin endpoints
 router.get('/', adminOnly, ctrl.list);
 router.post('/', adminOnly, ctrl.create);

@@ -1,7 +1,7 @@
-import AgentSidebar from '../components/AgentSidebar';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
+import './AgentSimplePage.css';
 
 const AgentSimplePage = ({ label }) => {
   const navigate = useNavigate();
@@ -17,48 +17,41 @@ const AgentSimplePage = ({ label }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   return (
-    <div className="page-container">
-      <AgentSidebar />
-      <main className="content-wrapper" data-customize-id="global.content">
-        <div className="topbar">
-          <h2>{label}</h2>
-          <div className="topbar-right">
-            <div className="search-bar">
-              <input
-                type="text"
-                placeholder="Search..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div className="user-avatar">AG</div>
-          </div>
+    <div className="agent-simple-page" data-customize-id="global.content">
+      <div className="agent-simple-topbar">
+        <h2>{label}</h2>
+        <div className="agent-simple-search">
+          <input
+            type="text"
+            placeholder="Search..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
+      </div>
 
-        <div className="page-content">
-          <div className="info-box">
-            <p>Loading {label}...</p>
-            <p className="muted">
-              Connect this page to the backend API to display live data.
-            </p>
-          </div>
+      <div className="agent-simple-info-box">
+        <p>Loading {label}...</p>
+        <p className="agent-simple-muted">
+          Connect this page to the backend API to display live data.
+        </p>
+      </div>
 
-          <div className="quick-links">
-            <h3>Quick Navigation</h3>
-            <div className="quick-links-grid">
-              {agentPages.map((page) => (
-                <button
-                  key={page.path}
-                  className="quick-link-btn"
-                  onClick={() => navigate(page.path)}
-                >
-                  {page.name}
-                </button>
-              ))}
-            </div>
-          </div>
+      <div className="agent-simple-quick-links">
+        <h3>Quick Navigation</h3>
+        <div className="agent-simple-quick-links-grid">
+          {agentPages.map((page) => (
+            <button
+              key={page.path}
+              type="button"
+              className="agent-simple-quick-link-btn"
+              onClick={() => navigate(page.path)}
+            >
+              {page.name}
+            </button>
+          ))}
         </div>
-      </main>
+      </div>
     </div>
   );
 };

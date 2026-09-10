@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useLocation, useNavigate, Outlet } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -13,10 +14,27 @@ import ProfileDropdown from './ProfileDropdown'
 import ThemeSwitcher from './ThemeSwitcher'
 import './TenantLayout.css'
 
+function getTopbarTitle(activePage) {
+  const titles = {
+    dashboard: 'My Tenancy Hub',
+    notifications: 'Notification Center',
+    properties: 'Browse Properties',
+    bookings: 'My Bookings',
+    payments: 'Payments',
+    maintenance: 'Maintenance',
+    messages: 'Messages',
+    profile: 'Profile',
+    settings: 'Settings',
+    help: 'Help Center',
+  }
+  return titles[activePage] || 'Tenant Portal'
+}
+
 function TenantLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, logout } = useAuth()
+  const [searchTerm, setSearchTerm] = useState('')
 
   const role = user?.role || 'Tenant'
   const navItems = buildNavItems(role)
@@ -28,6 +46,13 @@ function TenantLayout() {
 
   function handleLogout() {
     logout(navigate)
+  }
+
+  function handleSearch(event) {
+    event.preventDefault()
+    const query = searchTerm.trim()
+    if (!query) return
+    navigate(`/search?q=${encodeURIComponent(query)}`)
   }
 
   return (
@@ -56,7 +81,7 @@ function TenantLayout() {
         <motion.button
           type="button"
           className={`tenant-layout-side-btn ${activePage === 'help' ? 'active' : ''}`}
-          onClick={() => safeNavigate(`${location.pathname.split('/')[0]}/help`)}
+          onClick={() => safeNavigate('/tenant/help')}
           title="Help"
           whileTap={{ scale: 0.96 }}
         >
@@ -81,13 +106,19 @@ function TenantLayout() {
           <div className="tenant-layout-brand" onClick={() => safeNavigate('/tenant')} data-customize-id="global.brand">
             <h2 data-customize-id="global.brand.title">PRMS</h2>
             <span></span>
-            <p data-customize-id="global.brand.subtitle">{role} Portal</p>
+            <p data-customize-id="global.brand.subtitle">{getTopbarTitle(activePage)}</p>
           </div>
 
-          <div className="tenant-layout-search" data-customize-id="global.search">
+          <form className="tenant-layout-search" data-customize-id="global.search" onSubmit={handleSearch}>
             <Search size={22} />
-            <input type="text" placeholder="Search..." />
-          </div>
+            <input
+              type="search"
+              placeholder="Search properties..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              aria-label="Search properties"
+            />
+          </form>
 
           <div className="tenant-layout-actions" data-customize-id="global.top-actions">
             <NotificationDropdown />

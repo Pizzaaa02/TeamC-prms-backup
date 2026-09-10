@@ -21,6 +21,10 @@ function PaymentReceipt() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    loadReceipt();
+  }, [id]);
+
   async function loadReceipt() {
     try {
       const res = await apiClient.get(`/payments/${id}`);

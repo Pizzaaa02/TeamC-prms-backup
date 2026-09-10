@@ -6,6 +6,7 @@ import { AgentController } from './controller_agent';
 const router = express.Router();
 const agent = new AgentController();
 
+router.get('/me/properties', authenticate, agentOnly, agent.myProperties);
 router.get('/', authenticate, adminOrAgent, agent.list);
 router.get('/:id', authenticate, adminOrAgent, agent.getById);
 router.post('/', authenticate, adminOrAgent, agent.create);

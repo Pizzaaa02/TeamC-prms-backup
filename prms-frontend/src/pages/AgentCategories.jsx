@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { categoryApi } from '../api/categories'
-import { apiClient } from '../api'
 import {
   FolderOpen,
   Plus,
@@ -29,20 +28,15 @@ function AgentCategories() {
   async function loadData() {
     setError('')
     try {
-      const userRes = await apiClient.get('/auth/me')
-      const userId = userRes.data?.data?.id
-
-      const [sharedRes, allRes] = await Promise.all([
+      const [sharedRes, personalRes] = await Promise.all([
         categoryApi.shared(),
-        categoryApi.list({ isShared: false }),
+        categoryApi.personalList(),
       ])
 
       setSharedCats(sharedRes.data?.data ?? [])
-      if (userId) {
-        setPersonalCats((allRes.data?.data ?? []).filter(c => c.ownerId === userId))
-      }
+      setPersonalCats((personalRes.data?.data ?? []).filter(c => !c.isDisabled))
     } catch (e) {
-      setError(e.message || 'Failed to load categories')
+      setError(e.response?.data?.error?.message || e.message || 'Failed to load categories')
       console.error('Failed to load categories', e)
     } finally {
       setLoading(false)
@@ -57,10 +51,9 @@ function AgentCategories() {
   async function createPersonal() {
     if (!formName.trim()) return showToast('Name is required', 'error')
     try {
-      await categoryApi.create({
+      await categoryApi.createPersonal({
         name: formName.trim(),
         description: formDesc.trim(),
-        isShared: false,
       })
       showToast('Personal category created')
       setShowForm(false)
@@ -68,7 +61,7 @@ function AgentCategories() {
       setFormDesc('')
       loadData()
     } catch (e) {
-      showToast(e.message || 'Failed', 'error')
+      showToast(e.response?.data?.error?.message || e.message || 'Failed', 'error')
     }
   }
 

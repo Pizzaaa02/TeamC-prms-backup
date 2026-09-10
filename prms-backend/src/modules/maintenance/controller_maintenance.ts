@@ -27,6 +27,32 @@ export class MaintenanceController {
     } catch (error: any) { HELPERS(req).log({ action: 'VIEW_TICKETS', entity: 'MaintenanceTicket', status: 'Failed', level: 'error', errorMessage: error.message }); res.status(500).json({ success: false, error: { message: error.message } }); }
   };
 
+  // Non-admin: a tenant's own tickets only. GET /maintenance is
+  // adminOrLandlord-gated and has no per-user filtering wired up, so a
+  // Tenant had no way at all to list their own maintenance requests
+  // before this - confirmed live, would have 403'd.
+  myTickets = async (req: AuthRequest, res: Response) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const status = req.query.status as string | undefined;
+      const { tickets, total } = await maintenanceService.getTickets(page, limit, req.user!.id, status);
+      HELPERS(req).log({ action: 'VIEW_MY_TICKETS', entity: 'MaintenanceTicket', description: 'Viewed own maintenance tickets' });
+      res.json(paginatedResponse(tickets, page, limit, total));
+    } catch (error: any) { HELPERS(req).log({ action: 'VIEW_MY_TICKETS', entity: 'MaintenanceTicket', status: 'Failed', level: 'error', errorMessage: error.message }); res.status(500).json({ success: false, error: { message: error.message } }); }
+  };
+
+  assignedTickets = async (req: AuthRequest, res: Response) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const status = req.query.status as string | undefined;
+      const { tickets, total } = await maintenanceService.getAgentTickets(req.user!.id, page, limit, status);
+      HELPERS(req).log({ action: 'VIEW_ASSIGNED_TICKETS', entity: 'MaintenanceTicket', description: 'Viewed tickets for assigned properties' });
+      res.json(paginatedResponse(tickets, page, limit, total));
+    } catch (error: any) { HELPERS(req).log({ action: 'VIEW_ASSIGNED_TICKETS', entity: 'MaintenanceTicket', status: 'Failed', level: 'error', errorMessage: error.message }); res.status(500).json({ success: false, error: { message: error.message } }); }
+  };
+
   create = async (req: AuthRequest, res: Response) => {
     try {
       const ticket = await maintenanceService.createTicket(req.body, req.user!.id);

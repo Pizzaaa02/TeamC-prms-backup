@@ -4,6 +4,9 @@
 
 /* ---- Page layout ---- */
 .landlord-dashboard-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
   animation: fade-in 0.4s ease;
 }
 
@@ -17,7 +20,6 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-xl);
 }
 
 .landlord-page-title-row h1 {
@@ -68,13 +70,12 @@
 }
 
 .btn-outline {
-  border: 1px solid var(--border-low);
-  background: var(--card-bg);
-  color: var(--text-primary);
+  border: 1px solid var(--primary-container);
+  background: var(--primary-container);
+  color: var(--on-primary);
 }
 .btn-outline:hover {
-  background: var(--surface-container-low);
-  border-color: var(--outline-variant);
+  filter: brightness(1.15);
 }
 
 .btn-primary-solid {
@@ -176,7 +177,7 @@
 
 /* ---- Revenue Panel ---- */
 .revenue-panel {
-  min-height: 360px;
+  min-height: 260px;
 }
 
 .panel-title {
@@ -202,7 +203,7 @@
 
 /* ---- Bar chart ---- */
 .bar-chart {
-  height: 220px;
+  height: 160px;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
@@ -402,10 +403,6 @@
 }
 
 /* ---- Property Summary ---- */
-.property-summary {
-  margin-top: var(--spacing-lg);
-}
-
 .property-summary-title {
   margin: 0 0 var(--spacing-md);
   font-family: var(--headline-font);

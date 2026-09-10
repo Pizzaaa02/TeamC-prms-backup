@@ -15,6 +15,8 @@ import PublicPageTransition from './components/PublicPageTransition';
 import GuestHome from './pages/GuestHome';
 import GuestProperties from './pages/GuestProperties';
 import Login from './pages/Login';
+import ForgotPassword from './pages/ForgotPassword';
+import LandlordCategories from './pages/LandlordCategories';
 import Register from './pages/Register';
 import RoleSelection from './pages/RoleSelection';
 import NotFound from './pages/NotFound';
@@ -74,6 +76,8 @@ const TenantPayments = lazy(() => import('./pages/TenantPayments'));
 const TenantMaintenance = lazy(() => import('./pages/TenantMaintenance'));
 const LandlordMaintenance = lazy(() => import('./pages/LandlordMaintenance'));
 const AgentMaintenance = lazy(() => import('./pages/AgentMaintenance'));
+const AgentProperties = lazy(() => import('./pages/AgentProperties'));
+const AgentBookings = lazy(() => import('./pages/AgentBookings'));
 const AdminReports = lazy(() => import('./pages/AdminReports'));
 const AdminAuditLogs = lazy(() => import('./pages/AdminAuditLogs'));
 const NotificationCenter = lazy(() => import('./pages/NotificationCenter'));
@@ -142,6 +146,18 @@ function AppRoutes() {
             <LoginGuard>
               <PublicPageTransition>
                 <Login />
+              </PublicPageTransition>
+            </LoginGuard>
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/forgot-password"
+        element={
+          <PublicRoute>
+            <LoginGuard>
+              <PublicPageTransition>
+                <ForgotPassword />
               </PublicPageTransition>
             </LoginGuard>
           </PublicRoute>
@@ -250,6 +266,7 @@ function AppRoutes() {
         }
       >
         <Route index element={<LandlordDashboard />} />
+        <Route path="dashboard" element={<LandlordDashboard />} />
         <Route
           path="notifications"
           element={
@@ -281,7 +298,15 @@ function AppRoutes() {
           }
         />
         <Route path="heatmap" element={<LandlordHeatmap />} />
-        <Route path="maintenance" element={<LandlordSimplePage label="Maintenance Requests" />} />
+        <Route path="categories" element={<LandlordCategories />} />
+        <Route
+          path="maintenance"
+          element={
+            <SuspenseWrapper>
+              <LandlordMaintenance />
+            </SuspenseWrapper>
+          }
+        />
         <Route path="messages" element={<CommunicationHub />} />
         <Route path="settings" element={<Settings />} />
         <Route
@@ -307,6 +332,7 @@ function AppRoutes() {
         }
       >
         <Route index element={<TenantDashboard />} />
+        <Route path="dashboard" element={<TenantDashboard />} />
         <Route
           path="notifications"
           element={
@@ -354,6 +380,7 @@ function AppRoutes() {
         }
       >
         <Route index element={<AgentDashboard />} />
+        <Route path="dashboard" element={<AgentDashboard />} />
         <Route
           path="notifications"
           element={
@@ -363,20 +390,26 @@ function AppRoutes() {
           }
         />
         <Route path="profile" element={<Profile />} />
-        <Route path="properties" element={<AgentSimplePage label="Assigned Properties" />} />
-        <Route path="properties/:id" element={<PropertyDetail />} />
-        <Route path="bookings" element={<AgentSimplePage label="My Bookings" />} />
-        <Route path="maintenance" element={<AgentMaintenance />} />
-        <Route path="categories" element={<AgentCategories />} />
-        <Route path="settings" element={<Settings />} />
         <Route
-          path="settings/customizer"
+          path="properties"
           element={
             <SuspenseWrapper>
-              <WebsiteCustomizer />
+              <AgentProperties />
             </SuspenseWrapper>
           }
         />
+        <Route path="properties/:id" element={<PropertyDetail />} />
+        <Route
+          path="bookings"
+          element={
+            <SuspenseWrapper>
+              <AgentBookings />
+            </SuspenseWrapper>
+          }
+        />
+        <Route path="maintenance" element={<AgentMaintenance />} />
+        <Route path="categories" element={<AgentCategories />} />
+        <Route path="settings" element={<Settings />} />
         <Route
           path="finance"
           element={

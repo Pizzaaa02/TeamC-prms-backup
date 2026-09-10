@@ -4,6 +4,18 @@ import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '../../db';
 import { env } from '../../config';
 
+// Agent-role users are looked up through a separate Agent record (see
+// modules/agent), not the User row directly, so anywhere a user ends up
+// with the Agent role must also ensure that record exists — otherwise
+// their assigned-properties/bookings/tickets queries stay empty forever.
+async function ensureAgentRecord(userId: string) {
+  await prisma.agent.upsert({
+    where: { userId },
+    update: {},
+    create: { userId },
+  });
+}
+
 export async function registerUser(email: string, password: string, full_name?: string, phone?: string, role?: string) {
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) throw new Error('Email already registered');
@@ -30,6 +42,10 @@ export async function registerUser(email: string, password: string, full_name?: 
     },
     include: { UserRole: { include: { role: true } } },
   });
+
+  if ((role || 'Tenant') === 'Agent') {
+    await ensureAgentRecord(user.id);
+  }
 
   return user;
 }
@@ -101,6 +117,9 @@ export async function updateUserProfile(
       update: {},
       create: { userId, roleId: role.id },
     });
+    if (data.role === 'Agent') {
+      await ensureAgentRecord(userId);
+    }
   }
 
   const { role, ...userFields } = data;
@@ -135,5 +154,42 @@ export async function changePassword(
   return prisma.user.update({
     where: { id: userId },
     data: { passwordHash: newHash },
+  });
+}
+
+// In-memory OTP store (5 min expiry) - no real email/SMS service behind
+// this project, so the OTP is generated here and handed back in the API
+// response for the frontend to display directly, rather than actually
+// delivered out-of-band. Known, deliberate limitation (flagged in the
+// deployment report), not a real password-reset security model - don't
+// extend this pattern to anything that needs to be actually secure.
+const otpStore = new Map<string, { code: string; expiresAt: number }>();
+
+export async function generateOtpCode(email: string) {
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) throw new Error('Email not found');
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  otpStore.set(email, { code, expiresAt: Date.now() + 5 * 60 * 1000 });
+  return code;
+}
+
+export async function verifyOtpCode(email: string, code: string) {
+  const entry = otpStore.get(email);
+  if (!entry) throw new Error('OTP not found. Request a new one first.');
+  if (Date.now() > entry.expiresAt) {
+    otpStore.delete(email);
+    throw new Error('OTP expired. Request a new one.');
+  }
+  if (entry.code !== code) throw new Error('Invalid OTP code.');
+  otpStore.delete(email);
+}
+
+export async function resetPassword(email: string, newPassword: string) {
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) throw new Error('User not found');
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  return prisma.user.update({
+    where: { id: user.id },
+    data: { passwordHash },
   });
 }

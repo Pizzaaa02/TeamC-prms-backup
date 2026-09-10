@@ -12,17 +12,63 @@ export async function getBookings(page = 1, limit = 10, userId?: string, status?
   return { bookings, total };
 }
 
+export async function getLandlordBookings(userId: string, page = 1, limit = 10, status?: string) {
+  const where: any = { property: { ownerId: userId } };
+  if (status) where.status = status.toUpperCase();
+
+  const [bookings, total] = await Promise.all([
+    prisma.booking.findMany({
+      where, skip: (page - 1) * limit, take: limit, orderBy: { id: 'desc' },
+      include: { user: { select: { id: true, full_name: true, email: true } }, property: true },
+    }),
+    prisma.booking.count({ where }),
+  ]);
+  return { bookings, total };
+}
+
+export async function getAgentBookings(userId: string, page = 1, limit = 10, status?: string) {
+  const agent = await prisma.agent.findUnique({ where: { userId } });
+  if (!agent) return { bookings: [], total: 0 };
+
+  const assigned = await prisma.agentProperty.findMany({ where: { agentId: agent.id }, select: { propertyId: true } });
+  const propertyIds = assigned.map((a) => a.propertyId);
+  if (!propertyIds.length) return { bookings: [], total: 0 };
+
+  const where: any = { propertyId: { in: propertyIds } };
+  if (status) where.status = status.toUpperCase();
+
+  const [bookings, total] = await Promise.all([
+    prisma.booking.findMany({
+      where, skip: (page - 1) * limit, take: limit, orderBy: { id: 'desc' },
+      include: { user: { select: { id: true, full_name: true, email: true } }, property: true },
+    }),
+    prisma.booking.count({ where }),
+  ]);
+  return { bookings, total };
+}
+
 export async function getBookingById(id: string) {
   return prisma.booking.findUnique({ where: { id }, include: { user: true, property: true } });
 }
 
 export async function createBooking(data: { propertyId: string; start_date: string; end_date: string; totalAmount?: number; }, userId: string) {
+  // totalAmount is computed server-side (nights × the property's nightly
+  // rent) rather than trusted from the client — the booking UI never sends
+  // it at all (every booking was silently landing at 0), and even where a
+  // client does send one, price must not be client-controlled.
+  const property = await prisma.property.findUnique({ where: { id: data.propertyId }, select: { rent: true } });
+  if (!property) throw new Error('Property not found');
+  const start = new Date(data.start_date);
+  const end = new Date(data.end_date);
+  const nights = Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000));
+  const totalAmount = nights * property.rent;
+
   return prisma.booking.create({
     data: {
       property: { connect: { id: data.propertyId } },
-      start_date: new Date(data.start_date),
-      end_date: new Date(data.end_date),
-      totalAmount: data.totalAmount,
+      start_date: start,
+      end_date: end,
+      totalAmount,
       user: { connect: { id: userId } },
     },
     include: { user: true, property: true },
@@ -38,7 +84,11 @@ export async function cancelBooking(id: string) {
 }
 
 export async function getMyBookings(userId: string) {
-  return prisma.booking.findMany({ where: { userId }, include: { property: true } });
+  // Nested include so property.images actually comes through - a bare
+  // `property: true` leaves that nested relation empty, so MyBookings.jsx
+  // would always fall back to the placeholder image even when the
+  // property has real photos.
+  return prisma.booking.findMany({ where: { userId }, include: { property: { include: { images: true } } } });
 }
 
 export async function checkOverlap(

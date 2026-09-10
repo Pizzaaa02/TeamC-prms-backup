@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '../config/routes'
+import { bookingApi } from '../api/booking'
+import { favoritesApi } from '../api/favorites'
+import { maintenanceApi } from '../api/maintenance'
+import { getImageUrl } from '../config/imageHelper'
 import {
   ArrowUp,
   CalendarDays,
@@ -18,73 +22,85 @@ import {
 } from 'lucide-react'
 import './TenantDashboard.css'
 
+function formatAmount(amount) {
+  const value = Number(amount)
+  if (Number.isNaN(value)) return 'N/A'
+  return new Intl.NumberFormat('en-MY', { style: 'currency', currency: 'MYR', minimumFractionDigits: 0 }).format(value)
+}
+
+function isActiveBooking(b) {
+  const status = (b.status || '').toUpperCase()
+  if (status === 'CHECKED_IN') return true
+  if (status !== 'CONFIRMED') return false
+  const now = new Date()
+  const start = new Date(b.start_date)
+  const end = new Date(b.end_date)
+  return !Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime()) && start <= now && now <= end
+
+}
+
 function TenantDashboard() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
+  const [rentals, setRentals] = useState([])
+  const [savedProperties, setSavedProperties] = useState([])
+  const [maintenance, setMaintenance] = useState([])
+  const [dataError, setDataError] = useState('')
 
   useEffect(() => {
     localStorage.setItem('prmsDashboardPath', '/tenant')
-    const t = setTimeout(() => setLoading(false), 600)
-    return () => clearTimeout(t)
+
+    let cancelled = false
+
+    async function loadDashboardData() {
+      try {
+        const [bookingsRes, favoritesRes, ticketsRes] = await Promise.all([
+          bookingApi.myBookings(),
+          favoritesApi.getMyFavorites(),
+          maintenanceApi.myTickets({ limit: 5 }),
+        ])
+        if (cancelled) return
+
+        const bookings = bookingsRes.data?.data || []
+        setRentals(
+          bookings.filter(isActiveBooking).map((b) => ({
+            name: b.property?.title || 'Property',
+            location: [b.property?.city, b.property?.state].filter(Boolean).join(', ') || b.property?.address || '',
+          }))
+        )
+
+        const favorites = favoritesRes.data?.data || []
+        setSavedProperties(
+          favorites.slice(0, 4).map((f) => ({
+            name: f.property?.title || 'Property',
+            location: [f.property?.city, f.property?.state].filter(Boolean).join(', ') || f.property?.address || '',
+            price: f.property?.rent ? `${formatAmount(f.property.rent)} / month` : '',
+            image: getImageUrl(f.property?.images?.[0]?.url) || '/placeholder.png',
+          }))
+        )
+
+        const tickets = ticketsRes.data?.data || []
+        setMaintenance(
+          tickets.slice(0, 4).map((t) => ({
+            title: t.title,
+            desc: t.description,
+            status: (t.status || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+            urgent: (t.priority || '').toUpperCase() === 'URGENT' || (t.priority || '').toUpperCase() === 'HIGH',
+          }))
+        )
+      } catch (e) {
+        if (!cancelled) {
+          console.error('Failed to load dashboard data:', e)
+          setDataError('Some dashboard data could not be loaded.')
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    loadDashboardData()
+    return () => { cancelled = true }
   }, [])
-
-  const rentals = [
-    {
-      name: 'Skyline Tower, Unit 402',
-      location: 'Kuala Lumpur',
-    },
-    {
-      name: 'Green Valley Villas, No. 12',
-      location: 'Johor Bahru',
-    },
-  ]
-
-  const savedProperties = [
-    {
-      name: 'The Grand Atrium',
-      location: 'Bukit Bintang, Kuala Lumpur',
-      price: 'RM 4,800 / month',
-      image:
-        'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1200&auto=format&fit=crop',
-    },
-    {
-      name: 'Azure Heights',
-      location: 'Mont Kiara, Kuala Lumpur',
-      price: 'RM 3,600 / month',
-      image:
-        'https://images.unsplash.com/photo-1497366754035-f200968a6e72?q=80&w=1200&auto=format&fit=crop',
-    },
-  ]
-
-  const payments = [
-    {
-      title: 'Rental Payment',
-      date: 'October 1st, 2023',
-      amount: 'RM 2,500',
-      status: 'Due Soon',
-    },
-    {
-      title: 'Maintenance Deposit',
-      date: 'September 15th, 2023',
-      amount: 'RM 350',
-      status: 'Paid',
-    },
-  ]
-
-  const maintenance = [
-    {
-      title: 'Air-conditioning Service',
-      desc: 'Technician scheduled for tomorrow at 10:00 AM.',
-      status: 'In Progress',
-      urgent: true,
-    },
-    {
-      title: 'Water Pressure Issue',
-      desc: 'Landlord has approved inspection request.',
-      status: 'Approved',
-      urgent: false,
-    },
-  ]
 
   /* ---- KPI Card helper ---- */
   function KpiCard({ icon: Icon, iconBg, label, value, sublabel, trend, trendDir }) {
@@ -130,11 +146,11 @@ function TenantDashboard() {
         </div>
 
         <div className="landlord-page-actions">
-          <button type="button" className="btn-outline">
+          <button type="button" className="btn-outline" onClick={() => navigate(ROUTES.tenant.maintenance)}>
             <Wrench size={18} />
             Requests
           </button>
-          <button type="button" className="btn-primary-solid">
+          <button type="button" className="btn-primary-solid" onClick={() => navigate(ROUTES.tenant.payments)}>
             <WalletCards size={18} />
             Pay Now
           </button>
@@ -155,14 +171,17 @@ function TenantDashboard() {
           </>
         ) : (
           <>
-            {/* Next Payment */}
+            {/* Next Payment - left as a placeholder rather than fake data;
+                there's no tenant-scoped payment listing endpoint on the
+                backend yet (adding one is payment-module work, out of
+                scope for this pass), so this can't show a real value. */}
             <KpiCard
               icon={WalletCards}
               iconBg="icon-purple"
               label="Next Payment Due"
-              value="RM 2,500"
-              sublabel="In 3 Days · October 1st, 2023"
-              trend="Due soon"
+              value="—"
+              sublabel="See Payments for details"
+              trend={null}
               trendDir="neutral"
             />
 
@@ -171,9 +190,9 @@ function TenantDashboard() {
               icon={Home}
               iconBg="icon-blue"
               label="Active Rentals"
-              value="2"
-              sublabel="Across 2 locations"
-              trend="Both active"
+              value={String(rentals.length)}
+              sublabel={rentals.length ? `Across ${new Set(rentals.map((r) => r.location)).size} location${new Set(rentals.map((r) => r.location)).size === 1 ? '' : 's'}` : 'No active rentals'}
+              trend={rentals.length ? 'Active' : null}
               trendDir="up"
             />
 
@@ -182,14 +201,18 @@ function TenantDashboard() {
               icon={Wrench}
               iconBg="icon-rose"
               label="Maintenance"
-              value="2 Open"
-              sublabel="1 scheduled tomorrow"
-              trend="In progress"
+              value={`${maintenance.length} Open`}
+              sublabel={maintenance.some((m) => m.urgent) ? 'Urgent request open' : maintenance.length ? 'All routine' : 'No open requests'}
+              trend={maintenance.length ? 'In progress' : null}
               trendDir="neutral"
             />
           </>
         )}
       </section>
+
+      {dataError && (
+        <div className="alert alert-danger mt-2">{dataError}</div>
+      )}
 
       {/* ---- Active Rentals panel ---- */}
       <section className="panel-card">
@@ -201,15 +224,15 @@ function TenantDashboard() {
           <button
             type="button"
             className="btn-outline-sm"
-            onClick={() => navigate(ROUTES.tenant.properties)}
+            onClick={() => navigate(ROUTES.tenant.bookings)}
           >
             View All
           </button>
         </div>
 
         <div className="tenant-rental-list">
-          {rentals.map((rental) => (
-            <div className="tenant-rental-item" key={rental.name}>
+          {rentals.length ? rentals.map((rental, i) => (
+            <div className="tenant-rental-item" key={`${rental.name}-${i}`}>
               <div className="tenant-rental-dot" />
               <div>
                 <strong>{rental.name}</strong>
@@ -217,7 +240,9 @@ function TenantDashboard() {
               </div>
               <span className="status-badge active">Active</span>
             </div>
-          ))}
+          )) : (
+            <p className="panel-subtitle">No active rentals right now.</p>
+          )}
         </div>
       </section>
 
@@ -238,8 +263,8 @@ function TenantDashboard() {
         </div>
 
         <div className="saved-grid">
-          {savedProperties.map((property) => (
-            <article className="saved-card" key={property.name}>
+          {savedProperties.length ? savedProperties.map((property, i) => (
+            <article className="saved-card" key={`${property.name}-${i}`}>
               <img src={property.image} alt={property.name} />
 
               <button type="button" className="heart-btn">
@@ -252,7 +277,9 @@ function TenantDashboard() {
                 <span>{property.price}</span>
               </div>
             </article>
-          ))}
+          )) : (
+            <p className="panel-subtitle">No saved properties yet.</p>
+          )}
         </div>
       </section>
 
@@ -274,40 +301,12 @@ function TenantDashboard() {
             </button>
           </div>
 
+          {/* Not wired to real data - see the Next Payment Due KPI note
+              above, same reason (no tenant-scoped payment list endpoint
+              yet). Left as an honest empty state pointing at the real
+              Payments page rather than showing fabricated transactions. */}
           <div className="payment-list">
-            {payments.map((payment) => (
-              <div className="payment-item" key={payment.title}>
-                <div className="payment-icon-sm">
-                  <WalletCards size={22} />
-                </div>
-
-                <div className="payment-info">
-                  <h4>{payment.title}</h4>
-                  <p>
-                    <CalendarDays size={12} className="payment-cal-icon" />
-                    {payment.date}
-                  </p>
-                </div>
-
-                <div className="payment-right">
-                  <strong>{payment.amount}</strong>
-                  <span
-                    className={
-                      payment.status === 'Paid'
-                        ? 'status-badge paid'
-                        : 'status-badge pending'
-                    }
-                  >
-                    {payment.status === 'Paid' ? (
-                      <CheckCircle2 size={12} />
-                    ) : (
-                      <Clock size={12} />
-                    )}
-                    {payment.status}
-                  </span>
-                </div>
-              </div>
-            ))}
+            <p className="panel-subtitle">Visit Payments for your full transaction history.</p>
           </div>
         </div>
 
@@ -329,8 +328,8 @@ function TenantDashboard() {
           </div>
 
           <div className="maintenance-list">
-            {maintenance.map((req) => (
-              <div className="maintenance-item" key={req.title}>
+            {maintenance.length ? maintenance.map((req, i) => (
+              <div className="maintenance-item" key={`${req.title}-${i}`}>
                 <div className={`maintenance-icon ${req.urgent ? 'urgent' : 'soft'}`}>
                   <Wrench size={22} />
                 </div>
@@ -348,7 +347,9 @@ function TenantDashboard() {
                   </span>
                 </div>
               </div>
-            ))}
+            )) : (
+              <p className="panel-subtitle">No maintenance requests open.</p>
+            )}
           </div>
         </div>
       </section>

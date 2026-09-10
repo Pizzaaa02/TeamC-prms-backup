@@ -113,8 +113,9 @@ const subPages = {
   },
 }
 
-export default function LandlordSimplePage({ type = 'properties' }) {
-  const cfg = subPages[type] || subPages.properties
+export default function LandlordSimplePage({ type, label }) {
+  const resolvedType = type || (label === 'Help Center' ? 'help' : 'properties')
+  const cfg = subPages[resolvedType] || subPages.properties
   const Icon = cfg.icon
   const { user, updateProfile } = useAuth()
 
@@ -131,7 +132,7 @@ export default function LandlordSimplePage({ type = 'properties' }) {
 
     async function load() {
       try {
-        if (type === 'properties') {
+        if (resolvedType === 'properties') {
           const { data } = await propertyApi.myProperties()
           const items = data?.data || data || []
           setRows(items)
@@ -141,7 +142,7 @@ export default function LandlordSimplePage({ type = 'properties' }) {
             { label: 'Vacant', value: items.filter((p) => p.status === 'Vacant').length },
             { label: 'Pending Approval', value: items.filter((p) => p.status === 'Pending').length },
           ])
-        } else if (type === 'bookings') {
+        } else if (resolvedType === 'bookings') {
           const { data } = await bookingApi.list()
           const items = data?.data || data || []
           setRows(items)
@@ -151,7 +152,7 @@ export default function LandlordSimplePage({ type = 'properties' }) {
             { label: 'Approved', value: items.filter((b) => b.status === 'Approved').length },
             { label: 'Cancelled', value: items.filter((b) => b.status === 'Cancelled').length },
           ])
-        } else if (type === 'finance') {
+        } else if (resolvedType === 'finance') {
           const { data } = await paymentApi.list()
           const items = data?.data || data || []
           setRows(items)
@@ -165,7 +166,7 @@ export default function LandlordSimplePage({ type = 'properties' }) {
             { label: 'Deposits', value: '—' },
             { label: 'Late Payments', value: items.filter((p) => p.status === 'Overdue' || p.status === 'Late').length },
           ])
-        } else if (type === 'maintenance') {
+        } else if (resolvedType === 'maintenance') {
           const { data } = await maintenanceApi.list()
           const items = data?.data || data || []
           setRows(items)
@@ -175,7 +176,7 @@ export default function LandlordSimplePage({ type = 'properties' }) {
             { label: 'In Progress', value: items.filter((m) => m.status === 'In Progress' || m.status === 'InProgress').length },
             { label: 'Completed', value: items.filter((m) => m.status === 'Completed').length },
           ])
-        } else if (type === 'messages') {
+        } else if (resolvedType === 'messages') {
           const { data } = await adminApi.getNotifications()
           const items = data?.data || data || []
           setRows(items)
@@ -186,7 +187,7 @@ export default function LandlordSimplePage({ type = 'properties' }) {
             { label: 'Unread', value: unread },
             { label: 'Total', value: items.length },
           ])
-        } else if (type === 'settings') {
+        } else if (resolvedType === 'settings') {
           setCards([
             { label: 'Profile', value: user?.full_name || 'Active' },
             { label: 'Notifications', value: 'On' },
@@ -198,7 +199,7 @@ export default function LandlordSimplePage({ type = 'properties' }) {
             ['Rent Alerts', 'Notification', 'Enabled', 'Today', 'Manage'],
             ['Bank Payout', 'Finance', 'Linked', '—', 'Manage'],
           ])
-        } else if (type === 'help') {
+        } else if (resolvedType === 'help') {
           setCards([
             { label: 'Open Cases', value: '0' },
             { label: 'Guides', value: '12' },
@@ -220,10 +221,10 @@ export default function LandlordSimplePage({ type = 'properties' }) {
 
     load()
     return () => { cancelled = true }
-  }, [type, user])
+  }, [resolvedType, user])
 
   const handlePrimaryBtn = async () => {
-    if (type === 'settings') {
+    if (resolvedType === 'settings') {
       const name = prompt('Full name:', user?.full_name)
       const phone = prompt('Phone:', user?.phone)
       if (name || phone) {

@@ -13,13 +13,14 @@ import {
   Tag,
   BarChart3,
   Bell,
+  ShieldCheck,
 } from 'lucide-react'
 
 const roleRoutes = {
   Tenant:    { prefix: '/tenant',   pages: ['dashboard', 'notifications', 'properties', 'bookings', 'payments', 'maintenance', 'messages', 'settings'] },
-  Landlord:  { prefix: '/landlord', pages: ['dashboard', 'notifications', 'properties', 'bookings', 'finance', 'heatmap', 'maintenance', 'messages', 'settings'] },
-  Agent:     { prefix: '/agent',    pages: ['dashboard', 'notifications', 'properties', 'bookings', 'maintenance', 'categories', 'reports', 'finance', 'customizer', 'settings'] },
-  Admin:     { prefix: '/admin',    pages: ['dashboard', 'notifications', 'users', 'properties', 'bookings', 'finance', 'maintenance', 'messages', 'reports', 'categories', 'settings'] },
+  Landlord:  { prefix: '/landlord', pages: ['dashboard', 'notifications', 'properties', 'bookings', 'finance', 'heatmap', 'categories', 'maintenance', 'messages', 'settings'] },
+  Agent:     { prefix: '/agent',    pages: ['dashboard', 'notifications', 'properties', 'bookings', 'maintenance', 'categories', 'reports', 'finance', 'settings'] },
+  Admin:     { prefix: '/admin',    pages: ['dashboard', 'notifications', 'users', 'properties', 'bookings', 'finance', 'maintenance', 'messages', 'reports', 'categories', 'audit-logs', 'settings'] },
 }
 
 const pageMeta = {
@@ -38,6 +39,7 @@ const pageMeta = {
   reports:      { label: 'Reports',         icon: FileText },
   customizer:   { label: 'Customizer',      icon: Settings },
   help:         { label: 'Help',            icon: CircleHelp },
+  'audit-logs': { label: 'Audit Logs',      icon: ShieldCheck },
 }
 
 /** Build sidebar nav items for a given role */

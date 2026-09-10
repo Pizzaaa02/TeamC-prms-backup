@@ -3,7 +3,7 @@
   display: grid;
   grid-template-columns: 96px minmax(0, 1fr);
   background: var(--page-bg);
-  color: var(--text-color);
+  color: var(--text-primary);
 }
 
 .tenant-layout-sidebar {
@@ -13,16 +13,22 @@
   width: 96px;
   height: 100vh;
   padding: 26px 18px;
-  background: var(--background-color);
+  background: var(--header-background-color);
   color: var(--text-color);
   flex-direction: column;
   align-items: center;
   gap: 16px;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
   z-index: 100;
   transition:
     width 0.28s ease,
     box-shadow 0.28s ease;
+}
+
+.tenant-layout-sidebar::-webkit-scrollbar {
+  display: none;
 }
 
 .tenant-layout-sidebar:hover {
@@ -217,7 +223,7 @@
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: var(--text-primary);
+  background: var(--primary-color);
   color: white;
   font-size: 15px;
   font-weight: 900;

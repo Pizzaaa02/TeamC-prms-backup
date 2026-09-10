@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, Link as RouterLink } from 'react-router-dom'
+import { useNavigate, useSearchParams, Link as RouterLink } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { motion } from 'framer-motion'
 import {
@@ -37,13 +37,16 @@ const STATUS_FILTERS = [
 function Properties() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const [searchParams] = useSearchParams()
   const [properties, setProperties] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [viewMode, setViewMode] = useState('grid')
   const [activeType, setActiveType] = useState('all')
   const [activeStatus, setActiveStatus] = useState('all')
-  const [searchTerm, setSearchTerm] = useState('')
+  // Pre-fill from ?search=... so the topbar search box (which navigates
+  // here rather than filtering in place) actually lands on a filtered view.
+  const [searchTerm, setSearchTerm] = useState(() => searchParams.get('search') || '')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)

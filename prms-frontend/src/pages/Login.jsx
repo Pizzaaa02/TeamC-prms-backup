@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Building2, Eye, EyeOff, LockKeyhole, LogIn, Mail } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { signInWithGoogle } from '../firebase';
+import ThemeSwitcher from '../components/ThemeSwitcher';
 
 function Login() {
   const navigate = useNavigate();
@@ -48,13 +49,13 @@ function Login() {
     <main className="login-page" data-customize-id="global.page">
       <motion.section
         className="login-left"
-        initial={{ x: -80, opacity: 0 }}
+        initial={false}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.65, ease: 'easeOut' }}
       >
         <motion.div
           className="brand-small"
-          initial={{ y: -18, opacity: 0 }}
+          initial={false}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.15, duration: 0.45 }}
           onClick={() => navigate('/')}
@@ -67,13 +68,13 @@ function Login() {
         <div className="login-hero-content">
           <motion.div
             className="purple-line"
-            initial={{ width: 0, opacity: 0 }}
+            initial={false}
             animate={{ width: 150, opacity: 1 }}
             transition={{ delay: 0.35, duration: 0.55, ease: 'easeOut' }}
           ></motion.div>
 
           <motion.h1
-            initial={{ y: 28, opacity: 0 }}
+            initial={false}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.45, duration: 0.55 }}
           >
@@ -81,7 +82,7 @@ function Login() {
           </motion.h1>
 
           <motion.p
-            initial={{ y: 28, opacity: 0 }}
+            initial={false}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.55, duration: 0.55 }}
           >
@@ -91,7 +92,7 @@ function Login() {
 
           <motion.div
             className="trusted-card"
-            initial={{ y: 32, opacity: 0, scale: 0.96 }}
+            initial={false}
             animate={{ y: 0, opacity: 1, scale: 1 }}
             transition={{ delay: 0.75, duration: 0.5 }}
             whileHover={{ y: -4, scale: 1.02 }}
@@ -117,18 +118,22 @@ function Login() {
 
       <motion.section
         className="login-right"
-        initial={{ x: 80, opacity: 0 }}
+        initial={false}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.65, ease: 'easeOut' }}
       >
+        <div className="login-theme-toggle">
+          <ThemeSwitcher />
+        </div>
+
         <motion.div
           className="login-form-box"
-          initial={{ y: 34, opacity: 0, scale: 0.97 }}
+          initial={false}
           animate={{ y: 0, opacity: 1, scale: 1 }}
           transition={{ delay: 0.2, duration: 0.55, ease: 'easeOut' }}
         >
           <motion.h2
-            initial={{ y: 18, opacity: 0 }}
+            initial={false}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.35 }}
           >
@@ -137,7 +142,7 @@ function Login() {
 
           <motion.p
             className="form-subtitle"
-            initial={{ y: 18, opacity: 0 }}
+            initial={false}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.38, duration: 0.35 }}
           >
@@ -146,7 +151,7 @@ function Login() {
 
           <form onSubmit={handleSubmit}>
             <motion.div
-              initial={{ y: 18, opacity: 0 }}
+              initial={false}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.46, duration: 0.35 }}
             >
@@ -166,7 +171,7 @@ function Login() {
             </motion.div>
 
             <motion.div
-              initial={{ y: 18, opacity: 0 }}
+              initial={false}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.54, duration: 0.35 }}
             >
@@ -195,7 +200,7 @@ function Login() {
 
             <motion.div
               className="form-row"
-              initial={{ y: 18, opacity: 0 }}
+              initial={false}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.62, duration: 0.35 }}
             >
@@ -208,7 +213,7 @@ function Login() {
                 Remember me
               </label>
 
-              <a href="#">Forgot Password?</a>
+              <Link to="/forgot-password">Forgot Password?</Link>
             </motion.div>
 
             {/* Error message */}
@@ -216,7 +221,7 @@ function Login() {
               <motion.div
                 className="login-error"
                 role="alert"
-                initial={{ opacity: 0, y: -8 }}
+                initial={false}
                 animate={{ opacity: 1, y: 0 }}
               >
                 {error}
@@ -227,7 +232,7 @@ function Login() {
               type="submit"
               className="primary-btn"
               disabled={submitting || loading}
-              initial={{ y: 18, opacity: 0 }}
+              initial={false}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.7, duration: 0.35 }}
               whileHover={{ y: -2, scale: 1.01 }}
@@ -238,7 +243,7 @@ function Login() {
 
             <motion.div
               className="divider"
-              initial={{ opacity: 0 }}
+              initial={false}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8, duration: 0.35 }}
             >
@@ -249,7 +254,7 @@ function Login() {
 
             <motion.div
               className="social-row"
-              initial={{ y: 18, opacity: 0 }}
+              initial={false}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.88, duration: 0.35 }}
             >
@@ -265,7 +270,7 @@ function Login() {
 
             <motion.p
               className="signup-text"
-              initial={{ y: 18, opacity: 0 }}
+              initial={false}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.96, duration: 0.35 }}
             >

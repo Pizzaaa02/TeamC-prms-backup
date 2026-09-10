@@ -60,6 +60,7 @@ export const ROUTES = {
     root: '/tenant',
     dashboard: '/tenant/dashboard',
     properties: '/tenant/properties',
+    propertyDetail: (id: string) => `/tenant/properties/${id}`,
     bookings: '/tenant/bookings',
     payments: '/tenant/payments',
     paymentDetails: (id: string) => `/tenant/payments/${id}`,
