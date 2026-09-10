@@ -220,7 +220,7 @@ function AppRoutes() {
             </SuspenseWrapper>
           }
         />
-        <Route path="maintenance" element={<LandlordMaintenance />} />
+        <Route path="maintenance" element={<AdminSimplePage type="maintenance" />} />
         <Route path="messages" element={<CommunicationHub />} />
         <Route path="reports" element={<AdminReports />} />
         <Route path="audit-logs" element={<AdminAuditLogs />} />
