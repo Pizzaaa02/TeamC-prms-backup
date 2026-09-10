@@ -4,8 +4,11 @@ export const maintenanceApi = {
   list(params) {
     return apiClient.get('/maintenance', { params });
   },
-  mine() {
-    return apiClient.get('/maintenance/mine');
+  myTickets(params) {
+    return apiClient.get('/maintenance/my-tickets', { params });
+  },
+  assigned(params) {
+    return apiClient.get('/maintenance/assigned', { params });
   },
   getById(id) {
     return apiClient.get(`/maintenance/${id}`);
@@ -17,17 +20,9 @@ export const maintenanceApi = {
     return apiClient.get('/maintenance', { params: { status } });
   },
   updateStatus(id, status) {
-    return apiClient.put(`/maintenance/${id}`, { status: status.toUpperCase() });
+    return apiClient.put(`/maintenance/${id}`, { status });
   },
   assignToAgent(ticketId, agentId) {
-    return apiClient.patch(`/maintenance/${ticketId}/assign`, { agentId });
-  },
-  addNote(ticketId, note) {
-    return apiClient.post(`/maintenance/${ticketId}/notes`, { note });
-  },
-  addPhoto(ticketId, formData) {
-    return apiClient.post(`/maintenance/${ticketId}/photos`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    return apiClient.put(`/maintenance/${ticketId}`, { assignedTo: agentId });
   },
 };

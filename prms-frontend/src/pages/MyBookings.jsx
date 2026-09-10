@@ -12,6 +12,7 @@ export default function MyBookings() {
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [cancelling, setCancelling] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -25,6 +26,21 @@ export default function MyBookings() {
   }, [tab]);
 
   useEffect(() => { load(); }, [load]);
+
+  const withdraw = async () => {
+    if (!selected || !window.confirm('Withdraw this pending booking request?')) return;
+    setCancelling(true);
+    setError('');
+    try {
+      await bookingApi.cancel(selected.id || selected._id);
+      setSelected(null);
+      await load();
+    } catch (e) {
+      setError(e.response?.data?.error?.message || 'Failed to withdraw booking');
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   return (
     <div className="page-shell">
@@ -69,6 +85,11 @@ export default function MyBookings() {
           <p><strong>Status:</strong> {selected.status?.replaceAll('_', ' ')}</p>
           <p><strong>Stay:</strong> {new Date(selected.start_date).toLocaleDateString('en-MY')} – {new Date(selected.end_date).toLocaleDateString('en-MY')}</p>
           <p><strong>Total:</strong> RM {(selected.totalAmount ?? selected.property?.rent ?? 0).toLocaleString()}</p>
+          {selected.status === 'PENDING' && (
+            <button type="button" className="btn btn-danger" onClick={withdraw} disabled={cancelling}>
+              {cancelling ? 'Withdrawing…' : 'Withdraw Request'}
+            </button>
+          )}
         </Modal>
       )}
     </div>

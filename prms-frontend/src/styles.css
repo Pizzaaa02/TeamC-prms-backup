@@ -41,6 +41,26 @@ body {
   color: var(--text-primary);
 }
 
+/* Chrome/Edge paint autofilled inputs with their own light-blue/yellow
+   background, at a specificity no ordinary `background` rule can beat —
+   most visibly on the Login form, but it hits any text input the browser
+   offers to fill in. The box-shadow inset trick repaints over it with the
+   theme's own surface color instead of the browser's fixed one, so an
+   autofilled field blends in with the rest of the (possibly dark) UI
+   instead of standing out as a stray light box; the long transition delay
+   stops Chrome's own transition from briefly flashing its native color
+   first on every keystroke. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--text-primary);
+  caret-color: var(--text-primary);
+  -webkit-box-shadow: 0 0 0 1000px var(--card-bg) inset;
+  box-shadow: 0 0 0 1000px var(--card-bg) inset;
+  transition: background-color 600000s 0s, color 600000s 0s;
+}
+
 a {
   color: #9b3ee8;
   text-decoration: none;
@@ -89,6 +109,7 @@ button:disabled {
   --surface-container-lowest: #ffffff;
   --surface-dim: #cbdbf5;
   --surface-hover: #e8ecf4;
+  --navbar-bg-glass: rgba(255, 255, 255, 0.75);
 
   /* Text colors */
   --text-primary: #111827;
@@ -200,6 +221,20 @@ button:disabled {
   --card-bg: #1e1e1e;
   --sidebar-bg: #0a0a0a;
   --sidebar-text: #e5e7eb;
+  --navbar-bg-glass: rgba(18, 18, 18, 0.75);
+
+  /* --background-color / --text-color are the older, JS-driven theme
+     variables (set inline by SettingsContext / the Website Customizer).
+     Several layout stylesheets read them directly instead of the newer
+     --page-bg / --text-primary pair, but nothing ever gave them a
+     dark-mode value here — so whenever the JS side hadn't (yet, or ever)
+     written a dark-specific override, they silently kept resolving to
+     their light-mode default even with data-theme="dark" set, pinning
+     those elements' background/text to light colors. A real inline
+     override from the JS side still wins as before (inline beats a
+     class-selector custom property); this is only the fallback. */
+  --background-color: #1e1e1e;
+  --text-color: #f9fafb;
 
   /* Surface/container family — was missing entirely, so light-theme values
      (light blue/white) leaked through in dark mode (e.g. the "Tenant" role
@@ -314,6 +349,7 @@ button:disabled {
 }
 
 .login-right {
+  position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -322,6 +358,13 @@ button:disabled {
   background:
     radial-gradient(circle at 85% 15%, rgba(184, 76, 255, 0.08), transparent 28%),
     var(--page-bg);
+}
+
+.login-theme-toggle {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  color: var(--text-primary);
 }
 
 .login-form-box {
@@ -376,6 +419,7 @@ form label {
   flex: 1;
   border: none;
   outline: none;
+  background: transparent;
   font-size: 22px;
   color: var(--text-primary);
 }
@@ -1585,11 +1629,25 @@ img, video, iframe { max-width: 100%; }
 .btn-primary {
   display: flex; align-items: center; gap: 8px;
   padding: 10px 20px;
-  background: linear-gradient(135deg, #9b3ee8, #7c3aed);
-  color: #fff; border: none; border-radius: 10px;
+  background: var(--primary-container);
+  color: var(--on-primary); border: none; border-radius: 10px;
   font-weight: 600; font-size: 14px; cursor: pointer;
 }
-.btn-primary:hover { background: linear-gradient(135deg, #7c3aed, #6d28d9); }
+.btn-primary:hover { filter: brightness(1.15); }
+
+/* Small action buttons ("View All", "See All", "New Request" on the
+   dashboards) — used in several pages' JSX but had no matching rule here
+   at all, so they rendered as bare unstyled browser buttons. */
+.btn-outline-sm,
+.btn-primary-sm {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px;
+  background: var(--primary-container);
+  color: var(--on-primary); border: none; border-radius: 8px;
+  font-weight: 600; font-size: 12px; cursor: pointer;
+}
+.btn-outline-sm:hover,
+.btn-primary-sm:hover { filter: brightness(1.15); }
 
 .properties-toolbar {
   display: flex; justify-content: space-between; align-items: center;
@@ -1637,12 +1695,12 @@ img, video, iframe { max-width: 100%; }
 .status-gray { background: rgba(107,114,128,0.15); color: #4b5563; }
 
 .property-card-body { padding: 16px; }
-.property-card-body h3 { font-size: 16px; font-weight: 700; color: #1f2937; margin-bottom: 6px; }
-.property-location-row { display: flex; align-items: center; gap: 4px; color: #6b7280; font-size: 13px; margin-bottom: 8px; }
+.property-card-body h3 { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
+.property-location-row { display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: 13px; margin-bottom: 8px; }
 .property-type-row { margin-bottom: 12px; }
 .property-type-badge { display: inline-block; padding: 3px 10px; background: #f3e8ff; color: #7c3aed; border-radius: 6px; font-size: 12px; font-weight: 600; }
 .property-bottom-row { display: flex; justify-content: space-between; align-items: center; }
-.property-price { display: flex; align-items: center; gap: 4px; font-weight: 700; color: #1f2937; font-size: 15px; }
+.property-price { display: flex; align-items: center; gap: 4px; font-weight: 700; color: var(--text-primary); font-size: 15px; }
 .property-units { color: #9ca3af; font-size: 13px; }
 
 .properties-pagination { display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 32px; }

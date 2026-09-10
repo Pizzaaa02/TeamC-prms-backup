@@ -7,6 +7,12 @@ export const bookingApi = {
   myBookings(params) {
     return apiClient.get('/bookings/my-bookings', { params });
   },
+  assigned(params) {
+    return apiClient.get('/bookings/assigned', { params });
+  },
+  landlordBookings(params) {
+    return apiClient.get('/bookings/landlord', { params });
+  },
   getById(id) {
     return apiClient.get(`/bookings/${id}`);
   },
@@ -34,7 +40,7 @@ export const bookingApi = {
   /**
    * Check for date overlap on a property.
    * Expects params: { propertyId, startDate, endDate }
-   * Returns { hasOverlap: boolean, conflictingBookings: Booking[] }
+   * Returns { hasOverlap: boolean, conflictCount: number } without personal data.
    */
   checkOverlap(params) {
     return apiClient.get('/bookings/check-overlap', { params });

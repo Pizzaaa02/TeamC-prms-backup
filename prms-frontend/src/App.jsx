@@ -14,6 +14,8 @@ import PublicPageTransition from './components/PublicPageTransition';
 import GuestHome from './pages/GuestHome';
 import GuestProperties from './pages/GuestProperties';
 import Login from './pages/Login';
+import ForgotPassword from './pages/ForgotPassword';
+import LandlordCategories from './pages/LandlordCategories';
 import Register from './pages/Register';
 import RoleSelection from './pages/RoleSelection';
 import NotFound from './pages/NotFound';
@@ -74,6 +76,8 @@ const AdminBookings = lazy(() => import('./pages/AdminBookings'));
 const TenantPayments = lazy(() => import('./pages/TenantPayments'));
 const TenantMaintenance = lazy(() => import('./pages/TenantMaintenance'));
 const AgentMaintenance = lazy(() => import('./pages/AgentMaintenance'));
+const AgentProperties = lazy(() => import('./pages/AgentProperties'));
+const AgentBookings = lazy(() => import('./pages/AgentBookings'));
 const AdminReports = lazy(() => import('./pages/AdminReports'));
 const AdminAuditLogs = lazy(() => import('./pages/AdminAuditLogs'));
 const NotificationCenter = lazy(() => import('./pages/NotificationCenter'));
@@ -154,6 +158,18 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/forgot-password"
+        element={
+          <PublicRoute>
+            <LoginGuard>
+              <PublicPageTransition>
+                <ForgotPassword />
+              </PublicPageTransition>
+            </LoginGuard>
+          </PublicRoute>
+        }
+      />
+      <Route
         path="/register"
         element={
           <PublicRoute>
@@ -212,6 +228,7 @@ function AppRoutes() {
           element={<PropertyDetail />}
         />
         <Route path="bookings" element={<AdminBookings />} />
+        <Route path="agreements" element={<Agreements />} />
         <Route
           path="finance"
           element={
@@ -280,6 +297,7 @@ function AppRoutes() {
         <Route path="properties/edit/:id" element={<PropertyEdit />} />
         <Route path="properties/:id" element={<PropertyDetail />} />
         <Route path="bookings" element={<LandlordBookings />} />
+        <Route path="agreements" element={<Agreements />} />
         <Route
           path="finance"
           element={
@@ -290,6 +308,15 @@ function AppRoutes() {
         />
         <Route path="heatmap" element={<LandlordHeatmap />} />
         <Route path="maintenance" element={<LandlordMaintenance />} />
+        <Route path="categories" element={<LandlordCategories />} />
+        <Route
+          path="maintenance"
+          element={
+            <SuspenseWrapper>
+              <LandlordMaintenance />
+            </SuspenseWrapper>
+          }
+        />
         <Route path="messages" element={<CommunicationHub />} />
         <Route path="settings" element={<Settings />} />
         <Route path="privacy" element={<PrivacyCenter />} />
@@ -377,17 +404,20 @@ function AppRoutes() {
         />
         <Route path="profile" element={<Profile />} />
         <Route path="properties" element={<AgentWork mode="properties" />} />
-        <Route path="properties/:id" element={<PropertyDetail />} />
-        <Route path="bookings" element={<AgentWork mode="bookings" />} />
-        <Route path="maintenance" element={<AgentMaintenance />} />
-        <Route path="categories" element={<AgentCategories />} />
-        <Route path="settings" element={<Settings />} />
-        <Route path="privacy" element={<PrivacyCenter />} />
         <Route
-          path="settings/customizer"
+          path="properties"
           element={
             <SuspenseWrapper>
-              <WebsiteCustomizer />
+              <AgentProperties />
+            </SuspenseWrapper>
+          }
+        />
+        <Route path="properties/:id" element={<PropertyDetail />} />
+        <Route
+          path="bookings"
+          element={
+            <SuspenseWrapper>
+              <AgentBookings />
             </SuspenseWrapper>
           }
         />
@@ -401,6 +431,19 @@ function AppRoutes() {
           />
           <Route
             path="reports"
+        <Route path="maintenance" element={<AgentMaintenance />} />
+        <Route path="categories" element={<AgentCategories />} />
+        <Route path="settings" element={<Settings />} />
+        <Route
+          path="finance"
+          element={
+            <SuspenseWrapper>
+              <FinanceDashboard />
+            </SuspenseWrapper>
+          }
+        />
+        <Route
+          path="reports"
           element={
             <SuspenseWrapper>
                 <AgentPortfolio mode="reports" />

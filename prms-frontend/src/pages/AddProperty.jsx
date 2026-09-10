@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useCustomization } from '../contexts/CustomizationContext';
 import { categoryApi } from '../api/categories';
 import { PROPERTY_TYPES } from '../config/propertyTypes';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -27,7 +26,6 @@ const defaultImagePlaceholders = [];
 
 function AddProperty() {
   const { user } = useAuth();
-  const { themeColors } = useCustomization();
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -59,15 +57,22 @@ function AddProperty() {
       .catch(() => setCategories([]));
   }, []);
 
-  const accentColor = themeColors?.accentColor || '#D4A574';
-  const successColor = themeColors?.successColor || '#27AE60';
-  const primaryColor = themeColors?.primaryColor || '#667eea';
-  const headingColor = themeColors?.headingColor || '#2d3748';
-  const textColor = themeColors?.textColor || '#4a5568';
-  const bgColor = themeColors?.bgColor || '#f7fafc';
-  const cardBg = themeColors?.scaffoldColor || '#ffffff';
-  const borderColor = themeColors?.textColor ? `${themeColors.textColor}30`
-    : '#e2e8f0';
+  // themeColors used to come from useCustomization(), but that context never
+  // actually provides a themeColors value (grepped the whole codebase - it's
+  // provider only ever exposes isEditMode/draftConfig/etc, never this), so
+  // every one of these was silently always falling back to its hardcoded
+  // light-mode default - this page never actually responded to the
+  // light/dark toggle at all. Pointing straight at the same CSS custom
+  // properties every other page (PropertyEdit.css etc) already uses fixes
+  // that for real, since those ARE kept dark-mode-aware in styles.css.
+  const accentColor = 'var(--accent-color)';
+  const successColor = 'var(--status-success)';
+  const primaryColor = 'var(--primary-color)';
+  const headingColor = 'var(--text-primary)';
+  const textColor = 'var(--text-secondary)';
+  const bgColor = 'var(--page-bg)';
+  const cardBg = 'var(--surface, #fff)';
+  const borderColor = 'var(--border-color)';
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '../config/routes'
+import { bookingApi } from '../api/booking'
+import { favoritesApi } from '../api/favorites'
+import { maintenanceApi } from '../api/maintenance'
+import { getImageUrl } from '../config/imageHelper'
 import {
   ArrowUp,
   CalendarDays,
@@ -18,47 +22,85 @@ import { maintenanceApi } from '../api/maintenance'
 import { paymentApi } from '../api/payment'
 import { favoritesApi } from '../api/favorites'
 
+function formatAmount(amount) {
+  const value = Number(amount)
+  if (Number.isNaN(value)) return 'N/A'
+  return new Intl.NumberFormat('en-MY', { style: 'currency', currency: 'MYR', minimumFractionDigits: 0 }).format(value)
+}
+
+function isActiveBooking(b) {
+  const status = (b.status || '').toUpperCase()
+  if (status === 'CHECKED_IN') return true
+  if (status !== 'CONFIRMED') return false
+  const now = new Date()
+  const start = new Date(b.start_date)
+  const end = new Date(b.end_date)
+  return !Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime()) && start <= now && now <= end
+
+}
+
 function TenantDashboard() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [rentals, setRentals] = useState([])
   const [savedProperties, setSavedProperties] = useState([])
-  const [payments, setPayments] = useState([])
   const [maintenance, setMaintenance] = useState([])
+  const [dataError, setDataError] = useState('')
 
   useEffect(() => {
     localStorage.setItem('prmsDashboardPath', '/tenant')
-    Promise.all([
-      bookingApi.myBookings({ limit: 100 }), favoritesApi.getMyFavorites(),
-      paymentApi.list({ limit: 100 }), maintenanceApi.mine(),
-    ]).then(([bookingRes, favoriteRes, paymentRes, maintenanceRes]) => {
-      const bookings = bookingRes.data?.data || []
-      setRentals(bookings.filter((item) => ['CONFIRMED', 'CHECKED_IN'].includes(item.status)).map((item) => ({
-        id: item.id, name: item.property?.title || 'Property', location: [item.property?.city, item.property?.state].filter(Boolean).join(', '),
-      })))
-      setSavedProperties((favoriteRes.data?.data || []).map((item) => ({
-        id: item.id, propertyId: item.property?.id || item.property?._id, name: item.property?.title || 'Property', location: [item.property?.city, item.property?.state].filter(Boolean).join(', '),
-        price: new Intl.NumberFormat('ms-MY', { style: 'currency', currency: 'MYR' }).format(item.property?.rent || 0) + ' / month',
-        image: item.property?.images?.[0]?.url || '',
-      })))
-      setPayments((paymentRes.data?.data || []).map((item) => ({
-        id: item.id, title: item.booking?.property?.title || item.type || 'Rental payment',
-        date: new Date(item.due_date).toLocaleDateString('en-MY'), amount: new Intl.NumberFormat('ms-MY', { style: 'currency', currency: 'MYR' }).format(item.amount),
-        numericAmount: item.amount, dueDate: item.due_date, status: item.status,
-      })))
-      setMaintenance((maintenanceRes.data?.data || []).map((item) => ({
-        id: item.id, title: item.title, desc: item.description, status: item.status.replaceAll('_', ' '), urgent: ['HIGH', 'URGENT'].includes(item.priority),
-      })))
-    }).finally(() => setLoading(false))
+
+    let cancelled = false
+
+    async function loadDashboardData() {
+      try {
+        const [bookingsRes, favoritesRes, ticketsRes] = await Promise.all([
+          bookingApi.myBookings(),
+          favoritesApi.getMyFavorites(),
+          maintenanceApi.myTickets({ limit: 5 }),
+        ])
+        if (cancelled) return
+
+        const bookings = bookingsRes.data?.data || []
+        setRentals(
+          bookings.filter(isActiveBooking).map((b) => ({
+            name: b.property?.title || 'Property',
+            location: [b.property?.city, b.property?.state].filter(Boolean).join(', ') || b.property?.address || '',
+          }))
+        )
+
+        const favorites = favoritesRes.data?.data || []
+        setSavedProperties(
+          favorites.slice(0, 4).map((f) => ({
+            name: f.property?.title || 'Property',
+            location: [f.property?.city, f.property?.state].filter(Boolean).join(', ') || f.property?.address || '',
+            price: f.property?.rent ? `${formatAmount(f.property.rent)} / month` : '',
+            image: getImageUrl(f.property?.images?.[0]?.url) || '/placeholder.png',
+          }))
+        )
+
+        const tickets = ticketsRes.data?.data || []
+        setMaintenance(
+          tickets.slice(0, 4).map((t) => ({
+            title: t.title,
+            desc: t.description,
+            status: (t.status || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+            urgent: (t.priority || '').toUpperCase() === 'URGENT' || (t.priority || '').toUpperCase() === 'HIGH',
+          }))
+        )
+      } catch (e) {
+        if (!cancelled) {
+          console.error('Failed to load dashboard data:', e)
+          setDataError('Some dashboard data could not be loaded.')
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    loadDashboardData()
+    return () => { cancelled = true }
   }, [])
-
-  const nextPayment = payments.filter((item) => item.status === 'PENDING').sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))[0]
-
-  async function removeSavedProperty(property) {
-    if (!property.propertyId) return
-    await favoritesApi.removeFavorite({ propertyId: property.propertyId })
-    setSavedProperties((current) => current.filter((item) => item.id !== property.id))
-  }
 
   /* ---- KPI Card helper ---- */
   function KpiCard({ icon: Icon, iconBg, label, value, sublabel, trend, trendDir }) {
@@ -129,14 +171,17 @@ function TenantDashboard() {
           </>
         ) : (
           <>
-            {/* Next Payment */}
+            {/* Next Payment - left as a placeholder rather than fake data;
+                there's no tenant-scoped payment listing endpoint on the
+                backend yet (adding one is payment-module work, out of
+                scope for this pass), so this can't show a real value. */}
             <KpiCard
               icon={WalletCards}
               iconBg="icon-purple"
               label="Next Payment Due"
-              value={nextPayment?.amount || 'RM 0.00'}
-              sublabel={nextPayment ? `Due ${nextPayment.date}` : 'No pending payment'}
-              trend={nextPayment ? 'Due soon' : 'Up to date'}
+              value="—"
+              sublabel="See Payments for details"
+              trend={null}
               trendDir="neutral"
             />
 
@@ -146,8 +191,8 @@ function TenantDashboard() {
               iconBg="icon-blue"
               label="Active Rentals"
               value={String(rentals.length)}
-              sublabel={`Across ${new Set(rentals.map((item) => item.location)).size} locations`}
-              trend={rentals.length ? 'Active' : 'No active lease'}
+              sublabel={rentals.length ? `Across ${new Set(rentals.map((r) => r.location)).size} location${new Set(rentals.map((r) => r.location)).size === 1 ? '' : 's'}` : 'No active rentals'}
+              trend={rentals.length ? 'Active' : null}
               trendDir="up"
             />
 
@@ -156,14 +201,18 @@ function TenantDashboard() {
               icon={Wrench}
               iconBg="icon-rose"
               label="Maintenance"
-              value={`${maintenance.filter((item) => !['RESOLVED', 'CLOSED'].includes(item.status)).length} Open`}
-              sublabel={`${maintenance.length} total requests`}
-              trend="In progress"
+              value={`${maintenance.length} Open`}
+              sublabel={maintenance.some((m) => m.urgent) ? 'Urgent request open' : maintenance.length ? 'All routine' : 'No open requests'}
+              trend={maintenance.length ? 'In progress' : null}
               trendDir="neutral"
             />
           </>
         )}
       </section>
+
+      {dataError && (
+        <div className="alert alert-danger mt-2">{dataError}</div>
+      )}
 
       {/* ---- Active Rentals panel ---- */}
       <section className="panel-card">
@@ -182,8 +231,8 @@ function TenantDashboard() {
         </div>
 
         <div className="tenant-rental-list">
-          {rentals.map((rental) => (
-            <div className="tenant-rental-item" key={rental.id}>
+          {rentals.length ? rentals.map((rental, i) => (
+            <div className="tenant-rental-item" key={`${rental.name}-${i}`}>
               <div className="tenant-rental-dot" />
               <div>
                 <strong>{rental.name}</strong>
@@ -191,8 +240,9 @@ function TenantDashboard() {
               </div>
               <span className="status-badge active">Active</span>
             </div>
-          ))}
-          {!rentals.length && <p className="panel-subtitle">No active rentals.</p>}
+          )) : (
+            <p className="panel-subtitle">No active rentals right now.</p>
+          )}
         </div>
       </section>
 
@@ -213,9 +263,9 @@ function TenantDashboard() {
         </div>
 
         <div className="saved-grid">
-          {savedProperties.map((property) => (
-            <article className="saved-card" key={property.id} onClick={() => property.propertyId && navigate(`/tenant/properties/${property.propertyId}`)}>
-              {property.image ? <img src={property.image} alt={property.name} /> : <div className="saved-image-placeholder"><Home size={42} /></div>}
+          {savedProperties.length ? savedProperties.map((property, i) => (
+            <article className="saved-card" key={`${property.name}-${i}`}>
+              <img src={property.image} alt={property.name} />
 
               <button type="button" className="heart-btn" aria-label={`Remove ${property.name} from saved properties`} onClick={(event) => { event.stopPropagation(); removeSavedProperty(property) }}>
                 <Heart size={24} fill="currentColor" />
@@ -227,8 +277,9 @@ function TenantDashboard() {
                 <span>{property.price}</span>
               </div>
             </article>
-          ))}
-          {!savedProperties.length && <p className="panel-subtitle">No saved properties yet.</p>}
+          )) : (
+            <p className="panel-subtitle">No saved properties yet.</p>
+          )}
         </div>
       </section>
 
@@ -250,41 +301,12 @@ function TenantDashboard() {
             </button>
           </div>
 
+          {/* Not wired to real data - see the Next Payment Due KPI note
+              above, same reason (no tenant-scoped payment list endpoint
+              yet). Left as an honest empty state pointing at the real
+              Payments page rather than showing fabricated transactions. */}
           <div className="payment-list">
-            {payments.map((payment) => (
-              <div className="payment-item" key={payment.id}>
-                <div className="payment-icon-sm">
-                  <WalletCards size={22} />
-                </div>
-
-                <div className="payment-info">
-                  <h4>{payment.title}</h4>
-                  <p>
-                    <CalendarDays size={12} className="payment-cal-icon" />
-                    {payment.date}
-                  </p>
-                </div>
-
-                <div className="payment-right">
-                  <strong>{payment.amount}</strong>
-                  <span
-                    className={
-                      payment.status === 'PAID'
-                        ? 'status-badge paid'
-                        : 'status-badge pending'
-                    }
-                  >
-                    {payment.status === 'PAID' ? (
-                      <CheckCircle2 size={12} />
-                    ) : (
-                      <Clock size={12} />
-                    )}
-                    {payment.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-            {!payments.length && <p className="panel-subtitle">No payment activity.</p>}
+            <p className="panel-subtitle">Visit Payments for your full transaction history.</p>
           </div>
         </div>
 
@@ -306,8 +328,8 @@ function TenantDashboard() {
           </div>
 
           <div className="maintenance-list">
-            {maintenance.map((req) => (
-              <div className="maintenance-item" key={req.id}>
+            {maintenance.length ? maintenance.map((req, i) => (
+              <div className="maintenance-item" key={`${req.title}-${i}`}>
                 <div className={`maintenance-icon ${req.urgent ? 'urgent' : 'soft'}`}>
                   <Wrench size={22} />
                 </div>
@@ -325,8 +347,9 @@ function TenantDashboard() {
                   </span>
                 </div>
               </div>
-            ))}
-            {!maintenance.length && <p className="panel-subtitle">No maintenance requests.</p>}
+            )) : (
+              <p className="panel-subtitle">No maintenance requests open.</p>
+            )}
           </div>
         </div>
       </section>

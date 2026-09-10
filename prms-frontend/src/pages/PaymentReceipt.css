@@ -130,6 +130,8 @@
 }
 
 .receipt-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-size: 0.9rem;
   font-weight: 500;
   color: var(--on-surface);
@@ -175,7 +177,16 @@
 }
 
 /* Print styles */
+@media(max-width:600px) {
+  .payment-receipt{width:100%;min-width:0;padding-bottom:100px}
+  .receipt-row{flex-direction:column;gap:6px}
+  .receipt-value{text-align:left;flex-wrap:wrap}
+}
 @media print {
+  body *{visibility:hidden}
+  .payment-receipt,.payment-receipt *{visibility:visible}
+  .payment-receipt{position:absolute;inset:0;max-width:none;background:white;color:black;transform:none!important}
+  .payment-receipt .receipt-card,.payment-receipt .receipt-card *{color:black;background:white}
   .receipt-back,
   .receipt-actions {
     display: none !important;

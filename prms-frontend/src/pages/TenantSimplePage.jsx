@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   CalendarDays,
   CircleHelp,
@@ -13,7 +14,15 @@ import { bookingApi } from '../api/booking'
 import { paymentApi } from '../api/payment'
 import { maintenanceApi } from '../api/maintenance'
 import { adminApi } from '../api/admin'
+import { ROUTES } from '../config/routes'
 import './TenantSimplePage.css'
+
+function formatLabel(value) {
+  if (!value) return 'Unknown'
+  return String(value)
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+}
 
 /* ---- Sub-page config (static metadata only) ---- */
 const subPages = {
@@ -26,10 +35,10 @@ const subPages = {
     cardLabels: ['Total Bookings', 'Pending', 'Approved', 'Cancelled'],
     columns: ['Property', 'Landlord', 'Viewing Date', 'Status', 'Action'],
     renderRow: (b) => [
-      b.propertyId ? 'Property' : '—',
-      b.landlordId ? 'Landlord' : '—',
+      b.property?.title || b.property?.name || (b.propertyId ? 'Property' : '—'),
+      b.landlord?.full_name || b.landlord?.name || (b.landlordId ? 'Landlord' : '—'),
       b.viewing_date ? new Date(b.viewing_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '—',
-      b.status,
+      formatLabel(b.status),
       'View',
     ],
   },
@@ -59,9 +68,9 @@ const subPages = {
     columns: ['Ticket ID', 'Property', 'Issue', 'Status', 'Action'],
     renderRow: (m) => [
       m.id ? 'TCK-' + m.id.slice(-4) : '—',
-      m.propertyTitle || m.propertyId ? m.propertyTitle || 'Property' : '—',
-      m.issue || m.description || '—',
-      m.status,
+      m.property?.title || m.property?.name || m.propertyTitle || (m.propertyId ? 'Property' : '—'),
+      m.issue || m.title || m.description || '—',
+      formatLabel(m.status),
       'View',
     ],
   },
@@ -75,8 +84,8 @@ const subPages = {
     columns: ['Conversation', 'Related Property', 'Category', 'Status', 'Action'],
     renderRow: (n, i) => [
       n.title || 'Notification',
-      '—',
-      n.type || 'General',
+      n.property?.title || n.property?.name || '—',
+      formatLabel(n.type || 'General'),
       n.isRead ? 'Read' : 'Unread',
       n.isRead ? 'View' : 'Reply',
     ],
@@ -103,8 +112,10 @@ const subPages = {
   },
 }
 
-export default function TenantSimplePage({ type = 'bookings' }) {
-  const cfg = subPages[type] || subPages.bookings
+export default function TenantSimplePage({ type, label, children }) {
+  const navigate = useNavigate()
+  const resolvedType = type || (label === 'Messages' ? 'messages' : label === 'Help Center' ? 'help' : 'bookings')
+  const cfg = subPages[resolvedType] || subPages.bookings
   const Icon = cfg.icon
   const { user, updateProfile } = useAuth()
 
@@ -129,17 +140,18 @@ export default function TenantSimplePage({ type = 'bookings' }) {
 
     async function load() {
       try {
-        if (type === 'bookings') {
+        if (resolvedType === 'bookings') {
           const { data } = await bookingApi.myBookings()
           const items = data?.data || data || []
           setRows(items)
+          const status = (b) => String(b.status || '').toLowerCase()
           setCards([
             { label: 'Total Bookings', value: items.length },
-            { label: 'Pending', value: items.filter((b) => b.status === 'Pending').length },
-            { label: 'Approved', value: items.filter((b) => b.status === 'Approved').length },
-            { label: 'Cancelled', value: items.filter((b) => b.status === 'Cancelled').length },
+            { label: 'Pending', value: items.filter((b) => status(b) === 'pending').length },
+            { label: 'Approved', value: items.filter((b) => status(b) === 'confirmed').length },
+            { label: 'Cancelled', value: items.filter((b) => status(b) === 'cancelled').length },
           ])
-        } else if (type === 'payments') {
+        } else if (resolvedType === 'payments') {
           const { data } = await paymentApi.list()
           const items = data?.data || data || []
           setRows(items)
@@ -151,17 +163,18 @@ export default function TenantSimplePage({ type = 'bookings' }) {
             { label: 'Outstanding', value: pending.length },
             { label: 'Deposit Balance', value: '—' },
           ])
-        } else if (type === 'maintenance') {
+        } else if (resolvedType === 'maintenance') {
           const { data } = await maintenanceApi.list()
           const items = data?.data || data || []
           setRows(items)
+          const status = (m) => String(m.status || '').toLowerCase()
           setCards([
-            { label: 'Open Requests', value: items.filter((m) => m.status === 'Open').length },
-            { label: 'In Progress', value: items.filter((m) => m.status === 'In Progress' || m.status === 'InProgress').length },
-            { label: 'Completed', value: items.filter((m) => m.status === 'Completed').length },
-            { label: 'Urgent', value: items.filter((m) => m.priority === 'High').length },
+            { label: 'Open Requests', value: items.filter((m) => status(m) === 'open').length },
+            { label: 'In Progress', value: items.filter((m) => status(m) === 'in_progress').length },
+            { label: 'Completed', value: items.filter((m) => ['resolved', 'closed'].includes(status(m))).length },
+            { label: 'Urgent', value: items.filter((m) => String(m.priority || '').toLowerCase() === 'high').length },
           ])
-        } else if (type === 'messages') {
+        } else if (resolvedType === 'messages') {
           const { data } = await adminApi.getNotifications()
           const items = data?.data || data || []
           setRows(items)
@@ -172,7 +185,7 @@ export default function TenantSimplePage({ type = 'bookings' }) {
             { label: 'Unread', value: unread },
             { label: 'Total', value: items.length },
           ])
-        } else if (type === 'settings') {
+        } else if (resolvedType === 'settings') {
           setCards([
             { label: 'Profile', value: user?.full_name || 'Active' },
             { label: 'Notifications', value: 'On' },
@@ -184,7 +197,7 @@ export default function TenantSimplePage({ type = 'bookings' }) {
             ['Payment Method', 'Payments', 'Linked', '—', 'Manage'],
             ['Login Verification', 'Security', 'Enabled', 'Today', 'Manage'],
           ])
-        } else if (type === 'help') {
+        } else if (resolvedType === 'help') {
           setCards([
             { label: 'Open Cases', value: '0' },
             { label: 'Help Guides', value: '16' },
@@ -198,7 +211,10 @@ export default function TenantSimplePage({ type = 'bookings' }) {
           ])
         }
       } catch (e) {
-        setError(e.message || 'Failed to load data')
+        if (!cancelled) {
+          setError(e.response?.data?.message || e.response?.data?.error?.message || e.message || 'Failed to load data')
+          setRows([])
+        }
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -206,11 +222,21 @@ export default function TenantSimplePage({ type = 'bookings' }) {
 
     load()
     return () => { cancelled = true }
-  }, [type, user])
+  }, [resolvedType, user])
+
+  const filteredRows = useMemo(() => {
+    if (!searchTerm.trim()) return rows
+    const search = searchTerm.trim().toLowerCase()
+    return rows.filter((row, i) => {
+      const cells = cfg.renderRow ? cfg.renderRow(row, i) : row
+      if (!cells) return false
+      return cells.some((cell) => String(cell || '').toLowerCase().includes(search))
+    })
+  }, [rows, searchTerm, cfg])
 
   /* ---- Wire the primary button ---- */
   const handlePrimaryBtn = async () => {
-    if (type === 'maintenance') {
+    if (resolvedType === 'maintenance') {
       const issue = prompt('Describe the issue:')
       if (issue) {
         try {
@@ -220,7 +246,7 @@ export default function TenantSimplePage({ type = 'bookings' }) {
           alert('Failed to create: ' + e.message)
         }
       }
-    } else if (type === 'settings') {
+    } else if (resolvedType === 'settings') {
       const name = prompt('Full name:', user?.full_name)
       const phone = prompt('Phone:', user?.phone)
       if (name || phone) {
@@ -231,6 +257,13 @@ export default function TenantSimplePage({ type = 'bookings' }) {
         }
       }
     }
+  }
+
+  const handleRowAction = (row) => {
+    if (resolvedType === 'bookings') navigate(ROUTES.tenant.bookings)
+    else if (resolvedType === 'payments') navigate(row.id ? `/tenant/payments/${row.id}` : ROUTES.tenant.payments)
+    else if (resolvedType === 'maintenance') navigate(ROUTES.tenant.maintenance)
+    else if (resolvedType === 'settings') navigate(ROUTES.tenant.profile)
   }
 
   return (
@@ -246,6 +279,8 @@ export default function TenantSimplePage({ type = 'bookings' }) {
           </button>
         )}
       </section>
+
+      {children && <section style={{ marginBottom: '1.5rem' }}>{children}</section>}
 
       <section className="tenant-simple-cards">
         {cards.map((card) => (
@@ -264,7 +299,12 @@ export default function TenantSimplePage({ type = 'bookings' }) {
           <h2>{cfg.title}</h2>
           <div className="tenant-simple-search">
             <Search size={17} />
-            <input type="search" placeholder="Search records..." aria-label={`Search ${cfg.title.toLowerCase()}`} value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} />
+            <input
+              type="text"
+              placeholder="Search records..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
         </div>
 
@@ -285,15 +325,15 @@ export default function TenantSimplePage({ type = 'bookings' }) {
               ))}
             </div>
 
-            {visibleRows.length === 0 && (
+            {filteredRows.length === 0 && (
               <div className="tenant-simple-table-row">
                 <div colSpan={cfg.columns.length} style={{ gridColumn: `1 / ${cfg.columns.length + 1}`, textAlign: 'center', padding: 20 }}>
-                  {searchTerm ? 'No matching records found' : 'No records found'}
+                  {searchTerm ? 'No matching records found.' : 'No records found'}
                 </div>
               </div>
             )}
 
-            {visibleRows.map((row, i) => {
+            {filteredRows.map((row, i) => {
               const cells = cfg.renderRow ? cfg.renderRow(row, i) : row
               if (!cells) return null
               return (
@@ -304,8 +344,8 @@ export default function TenantSimplePage({ type = 'bookings' }) {
                 >
                   {cells.map((cell, ci) => (
                     <div key={`${String(ci)}-${row.id || i}`}>
-                      {cfg.columns[ci] === 'Action' ? (
-                        <button type="button">{cell}</button>
+                      {ci === cells.length - 1 ? (
+                        <button type="button" onClick={() => handleRowAction(row)}>{cell}</button>
                       ) : (
                         <span>{cell}</span>
                       )}

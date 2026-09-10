@@ -30,12 +30,48 @@
 }
 
 .profile-page-avatar {
+  position: relative;
   width: 140px;
   height: 140px;
   border-radius: var(--radius-full);
   overflow: hidden;
   flex-shrink: 0;
   background: var(--surface-container-low);
+  cursor: pointer;
+}
+
+.profile-page-avatar .avatar-edit-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.profile-page-avatar:hover .avatar-edit-overlay {
+  opacity: 1;
+}
+
+.profile-page-avatar .avatar-uploading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.avatar-upload-error {
+  color: var(--status-error);
+  font-size: 0.85rem;
+  margin: var(--spacing-5xs) 0 0;
 }
 
 .profile-page-avatar img {
@@ -66,7 +102,7 @@
   gap: var(--spacing-2xs);
   margin-top: var(--spacing-xs);
   padding: var(--spacing-2xs) var(--spacing-md);
-  background: var(--primary-color);
+  background: var(--primary-container);
   color: #fff;
   border: none;
   border-radius: var(--radius-md);

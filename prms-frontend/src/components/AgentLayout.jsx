@@ -1,13 +1,16 @@
+import { useState } from 'react'
 import { useLocation, useNavigate, Outlet } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   CircleHelp,
   LogOut,
+  Search,
 } from 'lucide-react'
 import PageTransition from './PageTransition'
 import { useAuth } from '../contexts/AuthContext'
 import { buildNavItems, resolveActivePage } from './NavigationConfig'
 import NotificationDropdown from './NotificationDropdown'
+import ProfileDropdown from './ProfileDropdown'
 import ThemeSwitcher from './ThemeSwitcher'
 import './AgentLayout.css'
 
@@ -25,6 +28,8 @@ function getTopbarTitle(activePage) {
     privacy: 'Privacy Center',
     profile: 'Profile',
     settings: 'Settings',
+    finance: 'Finance',
+    reports: 'Reports',
     help: 'Help Center',
   }
   return titles[activePage] || 'Agent Dashboard'
@@ -34,21 +39,20 @@ function AgentLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, logout } = useAuth()
+  const [searchTerm, setSearchTerm] = useState('')
 
   const navItems = buildNavItems(user?.role || 'Agent')
   const activePage = resolveActivePage(location.pathname, user?.role || 'Agent')
 
-  const initials = user
-    ? (user.full_name || user.name || 'AG').split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)
-    : 'AG'
-
-  const API = import.meta.env.VITE_API_BASE_URL || window.location.origin || 'http://localhost:3500';
-  const profileImgUrl = user?.profile_img_url
-    ? (user.profile_img_url.startsWith('http') ? user.profile_img_url : (API + user.profile_img_url))
-    : null;
-
   function safeNavigate(path) {
     if (location.pathname !== path) navigate(path)
+  }
+
+  function handleSearch(event) {
+    event.preventDefault()
+    const query = searchTerm.trim()
+    if (!query) return
+    navigate(`/agent/properties?search=${encodeURIComponent(query)}`)
   }
 
   function handleLogout() {
@@ -113,6 +117,17 @@ function AgentLayout() {
             <span></span>
             <p data-customize-id="global.brand.subtitle">{getTopbarTitle(activePage)}</p>
           </button>
+
+          <form className="agent-layout-search" data-customize-id="global.search" onSubmit={handleSearch}>
+            <Search size={22} />
+            <input
+              type="search"
+              placeholder="Search assigned properties..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              aria-label="Search assigned properties"
+            />
+          </form>
 
           <div className="agent-layout-top-actions" data-customize-id="global.top-actions">
             <NotificationDropdown />

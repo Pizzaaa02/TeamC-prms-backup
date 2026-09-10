@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useSettings } from '../contexts/SettingsContext'
+import useBranding from '../hooks/useBranding'
 import ThemeSwitcher from '../components/ThemeSwitcher'
 import {
   ArrowRight,
@@ -19,6 +21,25 @@ import './GuestHome.css';
 function GuestHome() {
   const navigate = useNavigate()
   const { settings, loadSettings } = useSettings()
+
+  /* Track the active theme so branding colors below can pick the correct
+     light_ or dark_ customizer field — without this, a light-only override
+     (e.g. a white header) stayed pinned on regardless of dark mode. */
+  const [theme, setTheme] = useState(() => document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light')
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light')
+    })
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+    return () => observer.disconnect()
+  }, [])
+  // Website Customizer branding (2026-09-09, ported feature) - takes
+  // priority when set, falls back to the existing settings-driven values
+  // below untouched otherwise. Additive only: nothing here changes if the
+  // customizer has never been configured.
+  const branding = useBranding()
+  const brandName = branding.name || settings?.branding_site_name || 'PRMS'
+  const brandLogo = branding.logoUrl || settings?.branding_logo_url
 
   /* Fallback hero content from settings */
   const heroTitle = settings?.homepage_hero_title || 'Find Your Perfect Space in Malaysia\'s Most Trusted Ecosystem.'
@@ -44,9 +65,19 @@ function GuestHome() {
   /* Hero text alignment */
   const heroAlignment = settings?.homepage_hero_text_alignment || 'left'
 
-  /* Header / Footer background colors */
-  const headerBg = settings?.header_background_color || '#ffffff'
-  const footerBg = settings?.footer_background_color || '#0f172a'
+  /* Header / Footer background colors.
+     Picked per active theme (light_* / dark_* customizer fields) so a
+     light-only override doesn't stay pinned on in dark mode. The legacy
+     `settings?.header_background_color` field predates dark mode and only
+     ever meant "light", so it's excluded once dark mode is active — no
+     hardcoded fallback either, so with nothing configured the navbar keeps
+     its own theme-aware CSS background (var(--navbar-bg-glass)). */
+  const headerBg = theme === 'dark'
+    ? (branding.colors?.dark_header_bg || null)
+    : (branding.colors?.light_header_bg || settings?.header_background_color || null)
+  const footerBg = theme === 'dark'
+    ? (branding.colors?.dark_footer_bg || '#0f172a')
+    : (branding.colors?.light_footer_bg || settings?.footer_background_color || '#0f172a')
 
   /* Footer copyright */
   const footerCopyright = settings?.footer_copyright_text || '© 2024 PRMS Malaysia. All rights reserved.'
@@ -116,12 +147,12 @@ function GuestHome() {
 
   return (
     <main className="guest-page">
-      <header className="guest-navbar" data-customize-id="global.header" style={{ backgroundColor: headerBg }}>
+      <header className="guest-navbar" data-customize-id="global.header" style={headerBg ? { backgroundColor: headerBg } : undefined}>
         <Link to="/" className="guest-logo">
-          {settings?.branding_logo_url ? (
-            <img src={getImageUrl(settings.branding_logo_url)} alt="Logo" className="guest-logo-img" />
+          {brandLogo ? (
+            <img src={branding.logoUrl ? brandLogo : getImageUrl(brandLogo)} alt="Logo" className="guest-logo-img" />
           ) : null}
-          <span>{settings?.branding_site_name || 'PRMS'}</span>
+          <span>{brandName}</span>
         </Link>
 
         <nav>

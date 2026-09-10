@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { getImageUrl } from '../config/imageHelper';
 import { agentApi } from '../api/agents'
+import { bookingApi } from '../api/booking'
 import { maintenanceApi } from '../api/maintenance'
 import './AgentDashboard.css'
 
@@ -37,28 +38,53 @@ function AgentDashboard() {
 
     const fetchData = async () => {
       try {
-        const [propertyRes, bookingRes, maintenanceRes] = await Promise.all([
-          agentApi.getMyProperties(), agentApi.getMyBookings(), maintenanceApi.list({ limit: 100 }),
+        const [propsRes, bookingsRes, ticketsRes] = await Promise.all([
+          agentApi.myProperties({ limit: 100 }),
+          bookingApi.assigned(),
+          maintenanceApi.assigned({ limit: 100 }),
         ])
-        const properties = (propertyRes.data?.data || []).map((entry) => ({
-          ...entry.property,
-          image: entry.property?.images?.[0]?.url || '',
-        }))
-        setAssignedProperties(properties)
-        setBookings((bookingRes.data?.data || []).map((booking) => ({
-          id: booking.id,
-          propertyTitle: booking.property?.title || 'Property',
-          tenant: booking.user?.full_name || booking.user?.email || 'Tenant',
-          startDate: new Date(booking.start_date).toLocaleDateString('en-MY'),
-          endDate: new Date(booking.end_date).toLocaleDateString('en-MY'),
-          status: booking.status,
-        })))
-        const ticketRows = maintenanceRes.data?.data || []
-        setMaintenanceRequests(ticketRows.map((ticket) => ({
-          ...ticket,
-          propertyTitle: ticket.property?.title || 'Property',
-          createdDate: new Date(ticket.created_at).toLocaleDateString('en-MY'),
-        })))
+
+        const properties = propsRes.data?.data || []
+        setAssignedProperties(
+          properties.map((p) => ({
+            id: p.id,
+            title: p.title,
+            address: p.address || '',
+            rent: p.rent || 0,
+            status: p.status,
+            image: getImageUrl(p.images?.[0]?.url) || 'https://images.unsplash.com/photo-1560448204-e02f11c3d0fd?q=80&w=1200&auto=format&fit=crop',
+          }))
+        )
+
+        const propertyNames = Object.fromEntries(properties.map((p) => [p.id, p.title]))
+
+        const allBookings = bookingsRes.data?.data || []
+        setBookings(
+          allBookings
+            .filter((b) => b.status === 'CONFIRMED' || b.status === 'CHECKED_IN')
+            .map((b) => ({
+              id: b.id,
+              propertyTitle: b.property?.title || 'Property',
+              tenant: b.user?.full_name || b.user?.email || 'Tenant',
+              startDate: b.start_date ? new Date(b.start_date).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A',
+              endDate: b.end_date ? new Date(b.end_date).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A',
+              status: b.status,
+            }))
+        )
+
+        const tickets = ticketsRes.data?.data || []
+        setMaintenanceRequests(
+          tickets.map((t) => ({
+            id: t.id,
+            propertyTitle: propertyNames[t.propertyId] || 'Property',
+            title: t.title,
+            priority: t.priority,
+            status: t.status,
+            createdDate: t.created_at ? new Date(t.created_at).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A',
+          }))
+        )
+      } catch (e) {
+        console.error('Failed to load agent dashboard data:', e)
       } finally {
         setLoading(false)
       }
@@ -136,7 +162,7 @@ function AgentDashboard() {
       <div className="landlord-page-title-row">
         <div>
           <h1>
-            <span className="material-symbols-outlined brand-icon">person_apARTment</span>
+            <span className="material-symbols-outlined brand-icon">apartment</span>
             Agent Dashboard
           </h1>
           <p>Welcome back, {user.full_name} — here&apos;s your portfolio overview.</p>

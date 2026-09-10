@@ -15,6 +15,10 @@ function LandlordHeatmap() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    load();
+  }, []);
+
   async function load() {
     setError('');
     try {

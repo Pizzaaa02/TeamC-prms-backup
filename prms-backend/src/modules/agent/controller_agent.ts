@@ -66,6 +66,17 @@ export class AgentController {
     }
   };
 
+  myProperties = async (req: AuthRequest, res: Response) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const { agents, total } = await agentService.getMyAssignedProperties(req.user!.id, page, limit);
+      res.json(paginatedResponse(agents, page, limit, total));
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: { message: error.message } });
+    }
+  };
+
   getAssignedProperties = async (req: Request, res: Response) => {
     try {
       const page = parseInt(req.query.page as string) || 1;

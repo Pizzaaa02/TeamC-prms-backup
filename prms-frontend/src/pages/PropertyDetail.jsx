@@ -341,6 +341,8 @@ function PropertyDetail() {
     }[property?.status];
 
   const todayStr = new Date().toISOString().slice(0, 10);
+  const normalizedRole = (user?.role || '').toLowerCase();
+  const canRequestBooking = !user || normalizedRole === 'tenant';
 
   /* Amenities */
   const amenities = property?.amenities || [];
@@ -682,12 +684,20 @@ function PropertyDetail() {
           </div>
 
           {/* RIGHT COLUMN — Sticky Booking Card */}
-          <div className="pd-right">
-            <BookingCard
-              property={property}
-              onBookClick={() => setShowBookingModal(true)}
-            />
-          </div>
+          {canRequestBooking && (
+            <div className="pd-right">
+              <BookingCard
+                property={property}
+                onBookClick={() => {
+                  if (!user) {
+                    navigate('/login', { state: { from: location.pathname } });
+                    return;
+                  }
+                  setShowBookingModal(true);
+                }}
+              />
+            </div>
+          )}
         </div>
       </motion.div>
 
@@ -759,11 +769,13 @@ function PropertyDetail() {
       </button>
 
       {/* Booking Modal */}
-      <TenantBookingModal
-        property={property}
-        isOpen={showBookingModal}
-        onClose={() => setShowBookingModal(false)}
-      />
+      {normalizedRole === 'tenant' && (
+        <TenantBookingModal
+          property={property}
+          isOpen={showBookingModal}
+          onClose={() => setShowBookingModal(false)}
+        />
+      )}
     </main>
   );
 }

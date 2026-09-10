@@ -45,3 +45,4 @@ prms-backend/data/*.csv
 # Misc
 .runtime/
 bcrypt_whl_file.whl
+/.vs

@@ -1,21 +1,28 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { AuthRequest } from '../../middleware/auth';
-import * as paymentService from './service_payment';
+import * as service from './service_payment';
 import { successResponse, paginatedResponse } from '../../utils/response';
 import { recordAudit } from '../admin/service_audit';
 
-const HELPERS = (req: Request) => {
-  const ip = (req as any).ip || req.socket.remoteAddress || '';
-  const ua = req.headers['user-agent'];
-  const url = req.originalUrl;
-  const method = req.method;
-  const auth = req as AuthRequest;
-  const log = async (ctx: { action: string; entity: string; entityId?: string; description?: string; status?: string; level?: string; errorMessage?: string }) => {
-    await recordAudit({ ...ctx, userId: auth.user?.id, username: auth.user?.email || undefined, userRole: auth.user?.role, ipAddress: ip, userAgent: ua, requestUrl: url, httpMethod: method, module: 'Payment', status: ctx.status || 'Success', level: ctx.level || 'info' });
-  };
-  return { log };
-};
-
+async function audit(req: AuthRequest, action: string, error?: unknown) {
+  await recordAudit({ userId: req.user!.id, userRole: req.user!.role, module: 'Payment', action,
+    entity: 'Payment', entityId: req.params.id ? String(req.params.id) : undefined,
+    status: error ? 'Failed' : 'Success', level: error ? 'error' : 'info',
+    errorMessage: error instanceof Error ? error.message : undefined, ipAddress: req.ip,
+    userAgent: req.headers['user-agent'], requestUrl: req.originalUrl, httpMethod: req.method });
+}
+async function run(req: AuthRequest, res: Response, action: string, work: () => Promise<unknown>) {
+  try {
+    const result = await work();
+    await audit(req, action);
+    res.json(result);
+  } catch (error) {
+    await audit(req, action, error);
+    res.status(error instanceof service.PaymentError ? error.statusCode : 500).json({
+      success: false, error: { message: error instanceof service.PaymentError ? error.message : 'Payment request failed. Please retry.' },
+    });
+  }
+}
 export class PaymentController {
   list = async (req: Request, res: Response) => {
     try {

@@ -2,20 +2,24 @@
   min-height: 100vh;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  background: var(--background-color);
-  color: var(--text-color);
+  background: var(--page-bg);
+  color: var(--text-primary);
 }
 
 .landlord-layout-sidebar {
   width: 96px;
-  min-height: 100vh;
+  height: 100vh;
+  position: sticky;
+  top: 0;
   padding: 34px 18px;
   background: var(--header-background-color);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 22px;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
   transition: width 0.28s ease, padding 0.28s ease;
   z-index: 10;
   position: sticky;
@@ -26,7 +30,9 @@
   scrollbar-width: none;
 }
 
-.landlord-layout-sidebar::-webkit-scrollbar { display: none; }
+.landlord-layout-sidebar::-webkit-scrollbar {
+  display: none;
+}
 
 .landlord-layout-sidebar:hover {
   width: 260px;
@@ -225,7 +231,7 @@
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: var(--text-primary);
+  background: var(--primary-color);
   color: white;
   font-size: 15px;
   font-weight: 900;

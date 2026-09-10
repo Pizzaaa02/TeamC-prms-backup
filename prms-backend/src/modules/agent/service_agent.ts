@@ -174,6 +174,12 @@ export async function assignProperty(agentId: string, propertyId: string) {
   });
 }
 
+export async function getMyAssignedProperties(userId: string, page = 1, limit = 10) {
+  const agent = await prisma.agent.findUnique({ where: { userId } });
+  if (!agent) return { agents: [], total: 0 };
+  return getAssignedProperties(agent.id, page, limit);
+}
+
 export async function getAssignedProperties(agentId: string, page = 1, limit = 10) {
   const where = { agentId };
   

@@ -3,7 +3,11 @@ import { prisma } from '../../db';
 export const getMyFavorites = async (userId: string) => {
   return prisma.favorite.findMany({
     where: { userId },
-    include: { property: true },
+    // Nested include, not just `property: true` - a shallow include
+    // would leave property.images empty (this model's own nested
+    // relation), showing a placeholder for every card even when the
+    // property has real photos.
+    include: { property: { include: { images: true } } },
   });
 };
 

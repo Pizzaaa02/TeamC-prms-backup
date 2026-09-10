@@ -19,9 +19,9 @@ import {
 
 const roleRoutes = {
   Tenant:    { prefix: '/tenant',   pages: ['dashboard', 'notifications', 'properties', 'bookings', 'agreements', 'payments', 'maintenance', 'messages', 'privacy', 'settings'] },
-  Landlord:  { prefix: '/landlord', pages: ['dashboard', 'notifications', 'properties', 'bookings', 'finance', 'heatmap', 'maintenance', 'messages', 'privacy', 'settings'] },
+  Landlord:  { prefix: '/landlord', pages: ['dashboard', 'notifications', 'properties', 'bookings', 'agreements', 'finance', 'heatmap', 'maintenance', 'messages', 'privacy', 'settings'] },
   Agent:     { prefix: '/agent',    pages: ['dashboard', 'notifications', 'properties', 'bookings', 'maintenance', 'categories', 'reports', 'finance', 'customizer', 'privacy', 'settings'] },
-  Admin:     { prefix: '/admin',    pages: ['dashboard', 'notifications', 'users', 'properties', 'bookings', 'finance', 'maintenance', 'messages', 'reports', 'categories', 'privacy', 'settings'] },
+  Admin:     { prefix: '/admin',    pages: ['dashboard', 'notifications', 'users', 'properties', 'bookings', 'agreements', 'finance', 'maintenance', 'messages', 'reports', 'categories', 'privacy', 'settings'] },
 }
 
 const pageMeta = {

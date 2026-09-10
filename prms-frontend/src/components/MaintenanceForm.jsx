@@ -7,7 +7,16 @@ import Modal from '../components/Modal';
 import { maintenanceApi } from '../api/maintenance';
 import { propertyApi } from '../api/property';
 
-const PRIORITY_ORDER = ['critical', 'high', 'medium', 'low'];
+// Matches the real MaintenancePriority enum (LOW/MEDIUM/HIGH/URGENT) -
+// 'critical' isn't a real value, submitting it would fail at the database.
+const PRIORITY_ORDER = ['urgent', 'high', 'medium', 'low'];
+
+const PRIORITY_MAP = {
+  urgent: { label: 'Urgent', color: '#ef4444' },
+  high: { label: 'High', color: '#f97316' },
+  medium: { label: 'Medium', color: '#eab308' },
+  low: { label: 'Low', color: '#22c55e' },
+};
 
 export default function MaintenanceForm({ onSuccess, initialData }) {
   const [open, setOpen] = useState(true);
@@ -31,6 +40,17 @@ export default function MaintenanceForm({ onSuccess, initialData }) {
       .catch(() => setProperties([]));
   }, []);
 
+  const loadProperties = async () => {
+    try {
+      // Was calling maintenanceApi.list() here - wrong endpoint entirely
+      // (fetched maintenance tickets, not properties, and 403'd for a
+      // Tenant anyway since that endpoint is admin/landlord-only).
+      const res = await propertyApi.list({ limit: 100 });
+      const data = res.data?.data;
+      setProperties(Array.isArray(data) ? data : data?.properties || []);
+    } catch {}
+  };
+
   const set = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
 
   const valid = () => {
@@ -45,7 +65,15 @@ export default function MaintenanceForm({ onSuccess, initialData }) {
   const submit = async () => {
     setUploading(true);
     try {
-      const data = { title: form.title, description: form.description, priority: form.priority.toUpperCase(), propertyId: form.propertyId };
+      // contactMethod is deliberately NOT sent - there's no such column on
+      // MaintenanceTicket, and Prisma rejects unknown fields on create, so
+      // including it made every single ticket submission fail. Kept as a
+      // form field/step for the UX flow, just not sent to the API.
+      const data = { title: form.title, description: form.description, priority: form.priority.toUpperCase(), propertyId: form.propertyId || undefined };
+      // Photo attachments aren't sent - MaintenanceTicket has no photo
+      // storage on the backend (no field/relation for it), so there's
+      // nowhere for an upload to go yet. The picker stays for local
+      // preview only rather than silently failing ticket creation.
       const res = await maintenanceApi.createTicket(data);
       onSuccess?.(res.data.data);
       setOpen(false);

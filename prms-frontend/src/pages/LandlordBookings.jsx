@@ -1,13 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { bookingApi } from '../api/booking';
 
-const ALL_TABS = ['pending', 'confirmed', 'active', 'completed', 'cancelled'];
+const ALL_TABS = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'confirmed', label: 'Confirmed' },
+  { value: 'checked_in', label: 'Checked In' },
+  { value: 'checked_out', label: 'Checked Out' },
+  { value: 'cancelled', label: 'Cancelled' },
+];
 
 export default function LandlordBookings() {
   const [tab, setTab] = useState('pending');
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -29,7 +34,7 @@ export default function LandlordBookings() {
   };
 
   const handleStatusChange = async (id, val) => {
-    try { await bookingApi.update(id, { status: val }); load(); } catch (e) { alert(e.response?.data?.message || 'Failed'); }
+    try { await bookingApi.update(id, { status: val }); load(); } catch (e) { alert(e.response?.data?.error?.message || 'Failed'); }
   };
 
   return (
@@ -41,9 +46,9 @@ export default function LandlordBookings() {
 
       <div className="card-table">
         <div className="status-filter">
-          {ALL_TABS.map(t => (
-            <button key={t} className={tab === t ? 'active' : ''} onClick={() => setTab(t)}>
-              {t.charAt(0).toUpperCase() + t.slice(1)}
+          {ALL_TABS.map(({ value, label }) => (
+            <button key={value} className={tab === value ? 'active' : ''} onClick={() => setTab(value)}>
+              {label}
             </button>
           ))}
         </div>
@@ -79,11 +84,11 @@ export default function LandlordBookings() {
                         <button className="btn btn-sm btn-danger" onClick={() => reject(b._id || b.id)}>Reject</button>
                       </>
                     )}
-                    {b.status !== 'PENDING' && b.status !== 'CANCELLED' && (
-                      <select value={(b.status || '')} onChange={e => handleStatusChange(b._id || b.id, e.target.value)} className="badge badge-warning">
-                        <option value="CHECKED_IN">Checked in</option>
-                        <option value="CHECKED_OUT">Checked out</option>
-                      </select>
+                    {b.status === 'CONFIRMED' && (
+                      <button className="btn btn-sm btn-primary" onClick={() => handleStatusChange(b._id || b.id, 'CHECKED_IN')}>Check In</button>
+                    )}
+                    {b.status === 'CHECKED_IN' && (
+                      <button className="btn btn-sm btn-primary" onClick={() => handleStatusChange(b._id || b.id, 'CHECKED_OUT')}>Check Out</button>
                     )}
                   </td>
                 </tr>

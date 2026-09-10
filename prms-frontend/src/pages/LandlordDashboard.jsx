@@ -20,14 +20,6 @@ import { propertyApi } from '../api/property'
 import { adminApi } from '../api/admin'
 import './LandlordDashboard.css'
 
-function rowsFrom(response) {
-  const payload = response?.data?.data
-  if (Array.isArray(payload)) return payload
-  if (Array.isArray(payload?.items)) return payload.items
-  if (Array.isArray(response?.data)) return response.data
-  return []
-}
-
 function LandlordDashboard() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
@@ -48,6 +40,10 @@ function LandlordDashboard() {
   const [propertiesList, setPropertiesList] = useState([])
   const [revenueBars, setRevenueBars] = useState([])
 
+  useEffect(() => {
+    loadDashboard()
+  }, [])
+
   async function loadDashboard() {
     setLoading(true)
     let errCount = 0
@@ -55,8 +51,8 @@ function LandlordDashboard() {
     try {
       /* ---- Booking stats (pending / confirmed / cancelled counts) ---- */
       try {
-        const res = await bookingApi.list({ limit: 100 })
-        const bookings = rowsFrom(res)
+        const res = await bookingApi.landlordBookings({ limit: 100 })
+        const bookings = res?.data?.data ?? []
         const pending = bookings.filter((b) => b.status === 'PENDING').length
         const confirmed = bookings.filter((b) => b.status === 'CONFIRMED').length
         const cancelled = bookings.filter((b) => b.status === 'CANCELLED').length
@@ -82,16 +78,16 @@ function LandlordDashboard() {
 
       /* ---- Property stats (occupancy, total/active) ---- */
       try {
-        const propsRes = await propertyApi.myProperties()
-        const props = rowsFrom(propsRes)
+        const propsRes = await propertyApi.list({ limit: 100 })
+        const props = propsRes?.data?.data ?? []
         const total = props.length
         const active = props.filter((p) => p.status === 'Active' || p.status === 'AVAILABLE').length
         const rate = total > 0 ? Math.round((active / total) * 100) : 0
         setStats((s) => ({ ...s, totalProperties: total, activeProperties: active, occupancyRate: rate }))
 
         /* Property summary — top 3 by revenue */
-        const availableProperties = props.filter((p) => p.status === 'Active' || p.status === 'AVAILABLE')
-        setPropertiesList(availableProperties)
+        const top3 = props.filter((p) => p.status === 'Active' || p.status === 'AVAILABLE').slice(0, 3)
+        setPropertiesList(top3)
       } catch {
         errCount++
       }
@@ -99,7 +95,7 @@ function LandlordDashboard() {
       /* ---- Maintenance stats (open tickets, urgent) ---- */
       try {
         const maintRes = await maintenanceApi.list({ limit: 100 })
-        const tickets = rowsFrom(maintRes)
+        const tickets = maintRes?.data?.data ?? []
         const open = tickets.filter((m) => m.status === 'OPEN' || m.status === 'IN_PROGRESS').length
         const urgent = tickets.filter((m) => m.priority === 'HIGH').length
         setStats((s) => ({ ...s, openTickets: open, urgentTickets: urgent }))
@@ -131,17 +127,17 @@ function LandlordDashboard() {
     }
   }
 
-  useEffect(() => {
-    loadDashboard()
-  }, [])
-
   async function handleApprove(bookingId, status) {
     /* Mark this approval in-flight */
     setApprovals((prev) =>
       prev.map((a) => (a.id === bookingId ? { ...a, approving: true, approvalMsg: '' } : a))
     )
     try {
-      await bookingApi.updateStatus(bookingId, status)
+      if (status === 'CONFIRMED') {
+        await bookingApi.confirm(bookingId)
+      } else {
+        await bookingApi.reject(bookingId)
+      }
       setApprovals((prev) =>
         prev.map((a) =>
           a.id === bookingId
@@ -204,23 +200,6 @@ function LandlordDashboard() {
     )
   }
 
-  function exportPortfolioCsv() {
-    const header = 'Property,Location,Status,Monthly Rent'
-    const rows = propertiesList.map((property) => [
-      property.title || '',
-      property.city || property.address || '',
-      property.status || '',
-      property.rent || 0,
-    ].map((value) => `"${String(value).replace(/"/g, '""')}"`).join(','))
-    const blob = new Blob([[header, ...rows].join('\n')], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = 'landlord-portfolio.csv'
-    link.click()
-    URL.revokeObjectURL(url)
-  }
-
   return (
     <div className="landlord-dashboard-page" data-customize-id="global.content">
       {/* Page title row */}
@@ -234,7 +213,7 @@ function LandlordDashboard() {
         </div>
 
         <div className="landlord-page-actions">
-          <button type="button" className="btn-outline" onClick={exportPortfolioCsv} disabled={!propertiesList.length}>
+          <button type="button" className="btn-outline">
             <Download size={18} />
             Export
           </button>
@@ -269,17 +248,19 @@ function LandlordDashboard() {
               iconBg="icon-purple"
               label="Total Revenue"
               value={`RM ${stats.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+              trend="+12.5%"
+              trendDir="up"
             />
 
             {/* Occupancy */}
             <KpiCard
               icon={Users}
               iconBg="icon-blue"
-              label="Available Properties"
-              value={stats.activeProperties}
-              sublabel={`${stats.occupancyRate}% of ${stats.totalProperties} properties`}
-              trend={stats.occupancyRate >= 80 ? 'Ready' : 'Limited'}
-              trendDir={stats.occupancyRate >= 80 ? 'up' : 'neutral'}
+              label="Occupancy"
+              value={`${stats.occupancyRate}%`}
+              sublabel={`${stats.activeProperties} / ${stats.totalProperties} units`}
+              trend={stats.occupancyRate >= 80 ? '+steady' : '-8%'}
+              trendDir={stats.occupancyRate >= 80 ? 'up' : 'down'}
             />
 
             {/* Pending bookings */}
@@ -289,8 +270,8 @@ function LandlordDashboard() {
               label="Pending Bookings"
               value={stats.pendingBookings}
               sublabel={`${stats.approvedBookings} confirmed`}
-              trend={`${stats.pendingBookings} awaiting`}
-              trendDir={stats.pendingBookings > 0 ? 'up' : 'neutral'}
+              trend={stats.pendingBookings > 3 ? '+3 new' : '0 new'}
+              trendDir={stats.pendingBookings > 3 ? 'up' : 'neutral'}
             />
 
             {/* Tickets */}
@@ -316,10 +297,10 @@ function LandlordDashboard() {
               <h3 className="panel-title-text">Revenue Growth</h3>
               <p className="panel-subtitle">Monthly performance comparison</p>
             </div>
-            <div className="btn-ghost chart-period" aria-label="Revenue period: recent months">
+            <button type="button" className="btn-ghost">
               <TrendingUp size={16} />
-              Recent Months
-            </div>
+              Last 6 Months
+            </button>
           </div>
 
           <div className="bar-chart">
@@ -408,8 +389,7 @@ function LandlordDashboard() {
             <span className="material-symbols-outlined">apartment</span>
             Asset Summary
           </h3>
-          <div className="property-summary-grid">
-          {propertiesList.slice(0, 3).map((p) => (
+          {propertiesList.map((p) => (
             <div className="summary-card" key={p.id}>
               <div className="summary-image" style={{
                 backgroundImage: `url(${p.main_image_url || 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=900&auto=format&fit=crop'})`
@@ -421,7 +401,6 @@ function LandlordDashboard() {
               <span className="summary-price">RM {(p.rent || 0).toLocaleString()}</span>
             </div>
           ))}
-          </div>
         </section>
       )}
 

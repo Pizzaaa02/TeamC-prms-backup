@@ -14,6 +14,22 @@ import ProfileDropdown from './ProfileDropdown'
 import ThemeSwitcher from './ThemeSwitcher'
 import './TenantLayout.css'
 
+function getTopbarTitle(activePage) {
+  const titles = {
+    dashboard: 'My Tenancy Hub',
+    notifications: 'Notification Center',
+    properties: 'Browse Properties',
+    bookings: 'My Bookings',
+    payments: 'Payments',
+    maintenance: 'Maintenance',
+    messages: 'Messages',
+    profile: 'Profile',
+    settings: 'Settings',
+    help: 'Help Center',
+  }
+  return titles[activePage] || 'Tenant Portal'
+}
+
 function TenantLayout() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -35,7 +51,8 @@ function TenantLayout() {
   function handleSearch(event) {
     event.preventDefault()
     const query = searchTerm.trim()
-    navigate(query ? `/tenant/properties?search=${encodeURIComponent(query)}` : '/tenant/properties')
+    if (!query) return
+    navigate(`/search?q=${encodeURIComponent(query)}`)
   }
 
   return (
@@ -94,12 +111,18 @@ function TenantLayout() {
           <button type="button" className="tenant-layout-brand" onClick={() => safeNavigate('/tenant')} data-customize-id="global.brand" aria-label="Go to tenant dashboard">
             <h2 data-customize-id="global.brand.title">PRMS</h2>
             <span></span>
-            <p data-customize-id="global.brand.subtitle">{role} Portal</p>
-          </button>
+            <p data-customize-id="global.brand.subtitle">{getTopbarTitle(activePage)}</p>
+          </div>
 
-          <form className="tenant-layout-search" data-customize-id="global.search" onSubmit={handleSearch} role="search">
+          <form className="tenant-layout-search" data-customize-id="global.search" onSubmit={handleSearch}>
             <Search size={22} />
-            <input type="search" placeholder="Search properties..." aria-label="Search properties" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} />
+            <input
+              type="search"
+              placeholder="Search properties..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              aria-label="Search properties"
+            />
           </form>
 
           <div className="tenant-layout-actions" data-customize-id="global.top-actions">

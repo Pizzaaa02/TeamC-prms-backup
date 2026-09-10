@@ -1,5 +1,5 @@
 import express from 'express';
-import { registerBody, loginBody, refreshBody } from './dto';
+import { registerBody, loginBody, refreshBody, verifyOtpBody, resetPasswordBody } from './dto';
 import { authenticate } from '../../middleware/auth';
 import { AuthController } from './controller_auth';
 import upload from '../../middleware/upload';
@@ -16,5 +16,8 @@ router.put('/me', authenticate, auth.updateMe);
 router.post('/me/avatar', authenticate, upload.single('profileImage'), auth.uploadProfileImage);
 router.post('/change-password', authenticate, auth.changePassword);
 router.post('/google', auth.googleLogin);
+router.post('/forgot-password', auth.forgotPassword);
+router.post('/verify-otp', verifyOtpBody, auth.verifyOtp);
+router.post('/reset-password', resetPasswordBody, auth.resetPassword);
 
 export default router;

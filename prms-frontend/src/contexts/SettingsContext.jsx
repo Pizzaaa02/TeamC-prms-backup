@@ -121,11 +121,24 @@ export function SettingsProvider({ children }) {
     return () => observer.disconnect();
   }, []);
 
-  /* Merge the flat settings with whichever light/dark variant is active */
+  /* Merge the flat settings with whichever light/dark variant is active.
+     theme_background_color / theme_text_color are excluded from the flat
+     settingsObj fallback in dark mode: settingsObj's defaults for these two
+     are light-oriented (e.g. a near-white background), and without a real
+     dark-specific override they were getting force-applied as an inline
+     style on <body> — the highest-specificity style there is — pinning the
+     whole app to a light body background/text color while every
+     theme-variable-driven color underneath correctly went dark. Omitting
+     them here lets applyCssVariables fall through to the theme-aware CSS
+     (body { background: var(--page-bg) }) instead. */
   const resolvedTheme = useMemo(() => {
-    if (!themeConfigs) return settingsObj;
-    const themeConfig = themeMode === 'dark' ? themeConfigs.dark : themeConfigs.light;
-    return { ...settingsObj, ...(themeConfig || {}) };
+    const themeConfig = themeConfigs ? (themeMode === 'dark' ? themeConfigs.dark : themeConfigs.light) : null;
+    const merged = { ...settingsObj, ...(themeConfig || {}) };
+    if (themeMode === 'dark') {
+      if (!themeConfig?.theme_background_color) delete merged.theme_background_color;
+      if (!themeConfig?.theme_text_color) delete merged.theme_text_color;
+    }
+    return merged;
   }, [settingsObj, themeConfigs, themeMode]);
 
   /* Convert flat key-value object to CSS variables applied to <html> */
@@ -135,6 +148,12 @@ export function SettingsProvider({ children }) {
       const val = settings[key];
       if (val) {
         root.style.setProperty(cssVar, val);
+      } else {
+        // Clear a stale value from an earlier call (e.g. set for light mode,
+        // then this key is absent after switching to dark) — otherwise it
+        // stays pinned as an inline style on <html>, beating every
+        // theme-aware CSS default regardless of the active theme.
+        root.style.removeProperty(cssVar);
       }
     }
 
@@ -155,14 +174,22 @@ export function SettingsProvider({ children }) {
       document.body.style.lineHeight = settings.theme_line_height;
     }
 
-    /* Apply background color to body */
+    /* Apply background color to body. Cleared (not just skipped) when
+       absent — e.g. switching to dark mode with no dark-specific override —
+       otherwise a value written for light mode stays stuck as an inline
+       style, which beats the theme-aware CSS (body { background:
+       var(--page-bg) }) regardless of what data-theme says. */
     if (settings.theme_background_color) {
       document.body.style.background = settings.theme_background_color;
+    } else {
+      document.body.style.removeProperty('background');
     }
 
     /* Apply text color */
     if (settings.theme_text_color) {
       document.body.style.color = settings.theme_text_color;
+    } else {
+      document.body.style.removeProperty('color');
     }
 
     /* Apply gradient when enabled */

@@ -12,8 +12,13 @@ const CACHE_TTL_MS = 60 * 1000; // 60 seconds
 const cache = new Map<string, CacheEntry>();
 
 const PUBLIC_ROUTES = ['^/properties', '^/search', '^/categories', '^/health'];
+// Matches under a PUBLIC_ROUTES prefix but is actually per-user/private data -
+// caching these under a URL-only key (no user in it) would serve one user's
+// private data to any other user hitting the same path within the TTL.
+const PRIVATE_EXCEPTIONS = ['^/categories/personal', '^/properties/my-properties'];
 
 function isPublicRoute(path: string): boolean {
+  if (PRIVATE_EXCEPTIONS.some((pattern) => new RegExp(pattern).test(path))) return false;
   return PUBLIC_ROUTES.some((pattern) => new RegExp(pattern).test(path));
 }
 

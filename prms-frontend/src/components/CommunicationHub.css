@@ -215,7 +215,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: var(--primary-color);
+  background: var(--primary-container);
   color: var(--on-primary);
   border: none;
   cursor: pointer;

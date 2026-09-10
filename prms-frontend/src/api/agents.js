@@ -1,4 +1,5 @@
 /* Agent API endpoints (T-00.4 / T-00.5) */
+import { apiClient } from '../api';
 import { apiClient } from './ApiClient';
 
 export const agentApi = {

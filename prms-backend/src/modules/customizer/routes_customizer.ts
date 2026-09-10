@@ -1,85 +1,25 @@
-/**
- * Customizer controller for the Website Customizer module.
- *
- * Handles CRUD operations for the five customization elements:
- *  - title
- *  - description
- *  - background_color
- *  - logo_url
- *  - company_name
- */
-
-import { Request, Response, Router } from 'express';
+import express from 'express';
+import multer from 'multer';
 import { authenticate } from '../../middleware/auth';
+import { adminOnly } from '../../middleware/rbac';
+import { CustomizerController } from './controller_customizer';
 
-// ---------- In-memory store ----------
+const router = express.Router();
+const ctrl = new CustomizerController();
 
-interface CustomizationConfig {
-  title: string;
-  description: string;
-  background_color: string;
-  logo_url: string;
-  company_name: string;
-}
-
-const DEFAULTS: CustomizationConfig = {
-  title: 'PRMS',
-  description: 'Property Rental Management System',
-  background_color: '#F3F6FB',
-  logo_url: '',
-  company_name: 'Property Rental Management System',
-};
-
-let config: CustomizationConfig = { ...DEFAULTS };
-
-// Hex color validation
-const HEX_RE = /^#[0-9a-fA-F]{3,8}$/;
-const URL_RE = /^(https?:\/\/)(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}(?:\/[#\w\-._~:\/[\]@!$&'()*+,;=]*)?$/;
-
-// ---------- Validators ----------
-
-function validateField(field: string, value: unknown): string | null {
-  if (field === 'title') {
-    if (!value || (typeof value === 'string' && !value.trim())) return 'title must not be empty';
-    if (typeof value === 'string' && value.length > 128) return 'title must be at most 128 characters';
-    return null;
-  }
-  if (field === 'description') {
-    if (value !== undefined && value !== null && typeof value === 'string' && value.length > 512) {
-      return 'description must be at most 512 characters';
-    }
-    return null;
-  }
-  if (field === 'background_color') {
-    if (!HEX_RE.test(String(value))) return 'background_color must be a valid hex colour (e.g. #FFF, #112233)';
-    return null;
-  }
-  if (field === 'logo_url') {
-    if (!value || (typeof value === 'string' && !value.trim())) return 'logo_url is required';
-    if (!URL_RE.test(String(value))) return 'logo_url must be a valid HTTP(S) URL';
-    return null;
-  }
-  if (field === 'company_name') {
-    if (!value || (typeof value === 'string' && !value.trim())) return 'company_name must not be empty';
-    if (typeof value === 'string' && value.length > 128) return 'company_name must be at most 128 characters';
-    return null;
-  }
-  return `Unknown field: ${field}`;
-}
-
-// ---------- Router setup ----------
-
-const router = Router();
-router.use(authenticate);
-
-/** GET the current customization config */
-router.get('/', (_req: Request, res: Response) => {
-  res.json(config);
+const logoUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) cb(null, true);
+    else cb(new Error('Only image files are allowed'));
+  },
 });
 
-/** PUT update all customization elements */
-router.put('/', (req: Request, res: Response) => {
-  const { title, description, background_color, logo_url, company_name } = req.body;
+// GET /config is public — guests need it for branding
+router.get('/config', ctrl.getConfig);
+router.get('/preview', ctrl.getPreview);
+router.get('/health', (_req, res) => res.json({ success: true, service: 'customizer', status: 'ok' }));
 
   // Validate each field before applying
   const errors: string[] = [];

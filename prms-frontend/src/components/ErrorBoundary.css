@@ -47,7 +47,7 @@
   padding: 0.6rem 1.2rem;
   border-radius: 8px;
   border: none;
-  background: var(--primary-color);
+  background: var(--primary-container);
   color: var(--on-primary);
   font-size: 0.875rem;
   cursor: pointer;

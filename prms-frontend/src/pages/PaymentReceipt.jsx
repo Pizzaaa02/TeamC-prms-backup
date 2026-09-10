@@ -7,7 +7,6 @@ import {
   CheckCircle,
   Clock,
   Printer,
-  Download,
   Building2,
   CalendarDays,
   Hash,
@@ -21,23 +20,30 @@ function PaymentReceipt() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  async function loadReceipt() {
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError('');
+    async function loadReceipt() {
     try {
       const res = await apiClient.get(`/payments/${id}`);
-      setReceipt(res.data?.data);
+      if (!cancelled) setReceipt(res.data?.data);
     } catch (e) {
-      setError('Payment not found');
+      if (!cancelled) setError(e.response?.data?.error?.message || 'Unable to load payment');
     } finally {
-      setLoading(false);
+      if (!cancelled) setLoading(false);
     }
-  }
+    }
+    loadReceipt();
+    return () => { cancelled = true; };
+  }, [id]);
 
   function handlePrint() {
     window.print();
   }
 
   if (loading) return <div className="receipt-loading">Loading receipt...</div>;
-  if (error) return <div className="receipt-error">{error}</div>;
+  if (error) return <div className="receipt-error" role="alert">{error} <button onClick={() => navigate(-1)}>Back</button></div>;
   if (!receipt) return null;
 
   const isPaid = receipt.status === 'PAID';
@@ -58,7 +64,7 @@ function PaymentReceipt() {
         <div className="receipt-header">
           <div className="receipt-logo-section">
             <h1>PRMS</h1>
-            <span>Payment Receipt</span>
+            <span>{isPaid ? 'Payment Receipt' : 'Payment Details'}</span>
           </div>
           <div className={`receipt-status ${isPaid ? 'paid' : 'pending'}`}>
             {isPaid ? (
@@ -67,7 +73,7 @@ function PaymentReceipt() {
               </>
             ) : (
               <>
-                <Clock size={18} /> Pending
+                <Clock size={18} /> {receipt.status}
               </>
             )}
           </div>
@@ -76,10 +82,7 @@ function PaymentReceipt() {
         {/* Action buttons */}
         <div className="receipt-actions">
           <button className="receipt-action-btn" onClick={handlePrint}>
-            <Printer size={14} /> Print
-          </button>
-          <button className="receipt-action-btn">
-            <Download size={14} /> Download PDF
+            <Printer size={14} /> Print / Save as PDF
           </button>
         </div>
 
@@ -125,7 +128,7 @@ function PaymentReceipt() {
           </div>
 
           <div className="receipt-row">
-            <div className="receipt-label">Date Issued</div>
+            <div className="receipt-label">Due Date</div>
             <div className="receipt-value">
               {new Date(receipt.due_date).toLocaleDateString('en-MY', { day: 'numeric', month: 'long', year: 'numeric' })}
             </div>
@@ -157,7 +160,8 @@ function PaymentReceipt() {
 
         {/* Footer */}
         <div className="receipt-footer">
-          <p>Thank you for your payment!</p>
+          <p>{receipt.method === 'simulation' || receipt.reference?.startsWith('SIM-') ? 'SIMULATION ONLY — no money was transferred.' : 'Payment record'}</p>
+          {!isPaid && <p>This record is not proof of payment.</p>}
           <p className="receipt-tinymce">Contact support@prms.com for enquiries.</p>
         </div>
       </div>

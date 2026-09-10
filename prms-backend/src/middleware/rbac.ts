@@ -24,3 +24,4 @@ export const tenantOnly = authorize('Tenant');
 export const agentOnly = authorize('Agent');
 export const adminOrLandlord = authorize('Admin', 'Landlord');
 export const adminOrAgent = authorize('Admin', 'Agent');
+export const adminOrLandlordOrAgent = authorize('Admin', 'Landlord', 'Agent');

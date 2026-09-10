@@ -10,4 +10,9 @@ export const categoryApi = {
   remove: (id) => apiClient.delete(`/categories/${id}`),
   toggle: (id) => apiClient.patch(`/categories/${id}/toggle`),
   seedDefaults: () => apiClient.post('/categories/seed'),
+  personalList: () => apiClient.get('/categories/personal'),
+  createPersonal: (data) => apiClient.post('/categories/personal', data),
+  updatePersonal: (id, data) => apiClient.put(`/categories/personal/${id}`, data),
+  removePersonal: (id) => apiClient.delete(`/categories/personal/${id}`),
+  togglePersonal: (id) => apiClient.patch(`/categories/personal/${id}/toggle`),
 };

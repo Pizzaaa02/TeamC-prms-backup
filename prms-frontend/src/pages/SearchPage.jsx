@@ -1,5 +1,5 @@
-import { useState, useCallback, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useCallback, useMemo, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { getImageUrl } from '../config/imageHelper';
 import { searchApi } from '../api/search'
 import { ROUTES } from '../config/routes'
@@ -17,7 +17,8 @@ import './SearchPage.css'
 
 function SearchPage() {
   const navigate = useNavigate()
-  const [query, setQuery] = useState('')
+  const [searchParams] = useSearchParams()
+  const [query, setQuery] = useState(searchParams.get('q') || '')
   const [location, setLocation] = useState('')
   const [type, setType] = useState('all')
   const [sort, setSort] = useState('relevance')
@@ -66,6 +67,14 @@ function SearchPage() {
       setLoading(false)
     }
   }, [query, location, type, sort, page])
+
+  // Run the search once on load when arriving with ?q= already set (e.g.
+  // from the sidebar search box) - otherwise landing here just shows the
+  // empty filter panel with no results until the user re-submits.
+  useEffect(() => {
+    if (searchParams.get('q')) handleSearch()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const clearFilters = useCallback(() => {
     setQuery('')

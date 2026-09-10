@@ -61,4 +61,21 @@ export const authApi = {
       newPassword,
     });
   },
+
+  forgotPassword({ email }) {
+    return apiClient.post('/auth/forgot-password', { email });
+  },
+
+  verifyOtp({ email, otp }) {
+    return apiClient.post('/auth/verify-otp', { email, otp });
+  },
+
+  resetPassword({ email, otp, newPassword, confirmPassword }) {
+    return apiClient.post('/auth/reset-password', {
+      email,
+      otp,
+      newPassword,
+      confirmPassword,
+    });
+  },
 };
